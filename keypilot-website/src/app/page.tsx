@@ -438,7 +438,7 @@ export default function Page() {
             <IconInstagram size={16} />
           </a>
           <a
-            href={LINKS.downloadDrive}
+            href={LINKS.downloadDirect}
             target="_blank"
             rel="noopener noreferrer"
             className="btn-pill btn-pill-primary"
@@ -478,7 +478,7 @@ export default function Page() {
           </p>
           <div className="hero-ctas">
             <a
-              href={LINKS.downloadDrive}
+              href={LINKS.downloadDirect}
               target="_blank"
               rel="noopener noreferrer"
               className="btn-pill btn-pill-primary"
@@ -491,6 +491,16 @@ export default function Page() {
             </a>
           </div>
           <p className="cta-meta">ZIP Package · Manual Installation</p>
+          <p className="cta-download-fallback">
+            Download not starting?{" "}
+            <a
+              href={LINKS.downloadDrive}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Open the Google Drive file
+            </a>
+          </p>
           <div className="hero-points">
             <div className="hero-point">
               <span className="hero-point-check"><IconCheck /></span>
@@ -764,7 +774,7 @@ export default function Page() {
                 </a>
               </li>
               <li>
-                <a href={LINKS.downloadDrive} target="_blank" rel="noopener noreferrer">
+                <a href={LINKS.downloadDirect} target="_blank" rel="noopener noreferrer">
                   Download ZIP <IconExternal />
                 </a>
               </li>
