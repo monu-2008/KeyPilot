@@ -411,48 +411,44 @@ All settings are persisted to `chrome.storage.local` and restored when the popup
 
 ## Enter / Space-to-submit (practice mode only)
 
-KeyPilot can optionally click the Submit button when you press `Enter` OR `Space` — but only under strict conditions:
+KeyPilot can optionally activate the visible **Submit** button with `Enter`
+or `Space`, but only in an explicitly marked local practice environment.
 
-**Two-key gate (both must be true):**
+**All three conditions must be true:**
 
-1. The user has enabled **"Enter / Space to submit"** in the popup Settings.
-2. The current page opts in via `<html data-keypilot-practice="true">`.
+1. The user enables **Enter / Space to submit** in Settings.
+2. The page contains `<html data-keypilot-practice="true">`.
+3. The page is opened as a local `file:` page or served from localhost /
+   127.0.0.1.
 
-If either condition is false, pressing Enter or Space does nothing related to KeyPilot (the page's own handling, if any, is left untouched). This ensures keyboard submission is **impossible** on a live graded or monitored quiz, even if the user accidentally leaves the setting on.
+A page-level HTML attribute alone is not a security boundary. The extension
+also checks the page origin. Live graded/monitored quiz submission remains
+manual.
 
 **Safety guards:**
 
-- **No double-fire:** An 800ms debounce prevents Enter+Space from both firing on the same question.
-- **No Next activation:** If the only available button is labeled "Next" (not "Submit"), practice-mode submit does NOT click it.
-- **No empty submission:** If the question has options but none is selected, submit is blocked (the console logs the reason).
-- **No disabled buttons:** Disabled or `aria-disabled` buttons are never clicked.
-- **No repeats:** `event.repeat` (holding the key) is ignored.
-- **No typing-field triggers:** Ignored while focus is in an input/textarea/contenteditable.
-- **No modifier combos:** Ignored when Ctrl/Cmd/Alt is held.
+- An 800ms debounce prevents Enter and Space from both firing for the same
+  submit action.
+- Only buttons labelled Submit, Check, or Verify can be activated; Next and
+  other navigation buttons are not treated as Submit.
+- Submission is blocked when the question has options but none is selected.
+- Disabled and `aria-disabled` buttons are never activated.
+- Key-repeat events and input/textarea/contenteditable focus are ignored.
+- Ctrl/Cmd/Alt modifier combinations are ignored.
 
-**Pages that opt in:**
+**How to test locally:**
 
-- `practice-quiz-portal.html` (the included local practice file) — already has `data-keypilot-practice="true"` on its `<html>` tag.
-- Any local HTML file you author that adds `<html data-keypilot-practice="true">`.
+1. Open `practice-quiz-portal.html` directly as a local file in Chrome.
+2. Open KeyPilot and click **Enable on this tab**.
+3. Expand Settings and enable **Enter / Space to submit**.
+4. Press `2`; verify an option is selected while the button remains labelled
+   `SUBMIT`.
+5. Press `Enter` or `Space`; the local practice page should activate
+   `SUBMIT` and then change the label to `NEXT`.
+6. Press Enter/Space again; KeyPilot must not activate `NEXT`.
+7. Open a normal remote website, even with the Settings toggle on; KeyPilot
+   must not trigger submission there.
 
-**Pages that NEVER opt in:**
-
-- The real portal (it doesn't set this attribute).
-- Any third-party quiz platform.
-- Any page you didn't author.
-
-**How to test it:**
-
-1. Open `practice-quiz-portal.html` in Chrome.
-2. Open the KeyPilot popup → **Enable on this tab**.
-3. Expand **Settings** → toggle **Enter / Space to submit** ON.
-4. Press `2` to select an option; the button should become enabled and remain labelled SUBMIT.
-5. Press `Enter` (or `Space`) on this local practice page. SUBMIT should be activated and the page should change the label to NEXT.
-6. Press Enter/Space again; the extension must not activate NEXT. Open DevTools Console to inspect the result.
-
-To verify the gate works, try the same on a non-practice page (e.g. any normal website) — pressing Enter/Space should do nothing related to KeyPilot, and the console will log `Enter pressed but practice mode is not authorized on this page.`
-
----
 
 ## Diagnostics center
 
