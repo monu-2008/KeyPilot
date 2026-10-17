@@ -441,6 +441,25 @@ img { max-width: 100%; height: auto; display: block; }
   font-weight: 500;
 }
 
+.cta-download-fallback {
+  margin: -14px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.cta-download-fallback a {
+  color: var(--brand-violet);
+  text-decoration: underline;
+  text-decoration-color: rgba(124, 108, 255, 0.45);
+  text-underline-offset: 3px;
+  font-weight: 600;
+}
+
+.cta-download-fallback a:hover {
+  color: var(--brand-blue);
+}
+
 .hero-points {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
