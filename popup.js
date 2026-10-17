@@ -1,5 +1,5 @@
 /**
- * KeyPilot by AQERIONX — popup script (Manifest V3, v2.1.0)
+ * KeyPilot by AQERIONX — popup script (Manifest V3, v2.1.1)
  *
  * Responsibilities:
  *   - Three-theme management: peach (default) / midnight / lavender,
@@ -16,8 +16,7 @@
  *       * Hush product card opens HUSH_URL via chrome.tabs.create.
  *       * Instagram pill opens INSTAGRAM_PROFILE_URL (official:
  *         https://www.instagram.com/aqerionx/) via chrome.tabs.create.
- *       * GitHub pill opens GITHUB_REPOSITORY_URL only if configured;
- *         otherwise hidden/disabled.
+ *       * GitHub pill opens the configured public repository URL.
  *
  * Permissions used:
  *   - activeTab  → access the currently focused tab.
@@ -28,7 +27,7 @@
 'use strict';
 
 const TAG = '[KeyPilot]';
-const VERSION = '2.1.0';
+const VERSION = '2.1.1';
 
 // =========================================================================
 // CONFIGURATION — EXTERNAL LINKS
