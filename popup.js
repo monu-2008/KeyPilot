@@ -49,22 +49,10 @@ const HUSH_URL = 'https://hush.aqerionx.in/';
 const INSTAGRAM_PROFILE_URL = 'https://www.instagram.com/aqerionx/';
 
 /**
- * GitHub repository URL for the "View on GitHub" footer link.
- *
- * !!! PLACEHOLDER !!!
- * Replace this empty string with the real repository URL once you publish
- * the project to GitHub. Until then, the GitHub pill is shown disabled
- * (greyed out, not clickable) so users see it exists but understand it's
- * not yet available.
- *
- * Example after publishing:
- *   const GITHUB_REPOSITORY_URL = 'https://github.com/AQERIONX/keypilot';
- *
- * The link opens in a new tab via chrome.tabs.create (NOT window.open,
- * which is disallowed in MV3 extension popups for cross-origin navigations).
+ * Public KeyPilot repository URL.
+ * The GitHub pill opens this exact repository in a new tab.
  */
-const GITHUB_REPOSITORY_URL = '';
-
+const GITHUB_REPOSITORY_URL = 'https://github.com/monu-2008/KeyPilot';
 // Storage keys (all under chrome.storage.local)
 const THEME_KEY           = 'keypilot.theme';            // 'peach' | 'midnight' | 'lavender'
 const REDUCED_MOTION_KEY  = 'keypilot.reducedMotion';    // boolean
