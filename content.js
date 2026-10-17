@@ -505,32 +505,54 @@
    */
   function isPracticePageAuthorized() {
     if (!practiceSubmit) return false;
-    const attr = document.documentElement.getAttribute('data-keypilot-practice');
-    return attr === 'true';
+
+    // Practice submission is limited to a local file or localhost test page.
+    // A DOM attribute on a live portal is not enough to authorize submission.
+    const localPracticeOrigin =
+      location.protocol === 'file:' ||
+      (location.protocol === 'http:' &&
+        ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname));
+    const optIn = document.documentElement.getAttribute('data-keypilot-practice') === 'true';
+    return localPracticeOrigin && optIn;
   }
 
   /**
-   * Find the Submit/Next button inside the currently visible question card.
+   * Find a Submit/Check/Verify button inside the current question scope; never treat Next as submission.
    * Looks for common patterns: button with text Submit/Next, [type="submit"],
    * [data-testid="submitButton"], .actionButton.
    * Returns null if not found.
    */
   function findSubmitButton(questionEl) {
     if (!questionEl) return null;
-    const candidates = Array.from(questionEl.querySelectorAll(
-      'button, [role="button"], input[type="submit"]'
-    )).filter(btn => {
-      if (btn.disabled) return false;
-      if (btn.getAttribute('aria-disabled') === 'true') return false;
-      const text = (btn.textContent || btn.value || '').trim().toLowerCase();
-      return /^(submit|next|check|verify|continue)$/.test(text) ||
-             btn.getAttribute('data-testid') === 'submitButton' ||
-             btn.classList.contains('actionButton');
-    });
-    if (candidates.length === 0) return null;
-    return candidates.find(isVisible) || candidates[0];
-  }
 
+    // The detector may return the radioGroupOptions element, while Submit
+    // lives in its enclosing card. Search the smallest relevant question scope
+    // first, then a known parent scope. This routine is used only behind the
+    // local-practice submission gate above.
+    const scopes = [];
+    const addScope = (el) => {
+      if (el && !scopes.includes(el)) scopes.push(el);
+    };
+    addScope(questionEl);
+    addScope(questionEl.closest('[data-testid="card"]'));
+    addScope(questionEl.closest('fieldset'));
+    addScope(questionEl.closest('[data-question], [data-question-id], .question, .quiz-question'));
+    addScope(questionEl.closest('form'));
+
+    for (const scope of scopes) {
+      const candidates = Array.from(scope.querySelectorAll(
+        'button, [role="button"], input[type="submit"]'
+      )).filter(btn => {
+        if (btn.disabled || btn.getAttribute('aria-disabled') === 'true') return false;
+        const text = (btn.textContent || btn.value || '').trim().toLowerCase();
+        // Intentionally never match "Next", "Continue", or other navigation.
+        return /^(submit|check|verify)$/.test(text);
+      });
+      const visibleCandidate = candidates.find(isVisible);
+      if (visibleCandidate) return visibleCandidate;
+    }
+    return null;
+  }
   /**
    * Has the user selected an answer for the current question?
    * We require a selection before Enter/Space can submit, because some
