@@ -468,16 +468,44 @@
 
       if (btn) {
         if (selectedValue !== null) {
-          btn.textContent = 'NEXT';
+          // Selection enables SUBMIT; the test simulates NEXT only after submit.
+          if (btn.dataset.submitted !== 'true') btn.textContent = 'SUBMIT';
           btn.disabled = false;
         } else {
           btn.textContent = 'SUBMIT';
           btn.disabled = true;
+          delete btn.dataset.submitted;
         }
       }
 
       return selectedValue;
     }
+
+    // Simulate a submit result on this LOCAL practice page only.
+    // A genuine SUBMIT click changes the label to NEXT. KeyPilot is expected
+    // never to activate NEXT by keyboard as a side effect of submission.
+    document.addEventListener('click', event => {
+      const button = event.target && event.target.closest
+        ? event.target.closest('.actionButton')
+        : null;
+      if (!button || button.disabled) return;
+      if (button.textContent.trim().toUpperCase() !== 'SUBMIT') return;
+
+      const card = button.closest('[data-testid="card"]');
+      const selected = card && card.querySelector('input[type="radio"]:checked');
+      if (!selected) return;
+
+      button.dataset.submitted = 'true';
+      button.textContent = 'NEXT';
+      const index = card.getAttribute('data-question-index');
+      if (index) {
+        const verification = document.getElementById('verify-' + index);
+        if (verification) {
+          setVerify('verify-' + index, true,
+            'PASS: Submit activated on the local practice page; button now shows NEXT.');
+        }
+      }
+    });
 
     // --- Wire up all cards ---
     document.querySelectorAll('[data-testid="card"]').forEach(card => {
