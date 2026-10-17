@@ -27,27 +27,26 @@ Enter / Space-to-submit shortcut is hard-gated to local practice pages only.
 3. [What changed in v2.0.0 (KeyPilot rebrand)](#what-changed-in-v200-keypilot-rebrand)
 4. [What changed in v1.3.0 (AQERIONX redesign)](#what-changed-in-v130-aqerionx-redesign)
 5. [What changed in v1.2.0 (portal DOM fixes)](#what-changed-in-v120-portal-dom-fixes)
-5. [Files in this project](#files-in-this-project)
-6. [Permissions — what they do and why](#permissions--what-they-do-and-why)
-7. [Installation on Windows (VS Code + Chrome)](#installation-on-windows-vs-code--chrome)
-8. [Theme management (three themes)](#theme-management-three-themes)
-9. [Settings panel](#settings-panel)
-10. [Using it](#using-it)
-11. [Enter / Space-to-submit (practice mode only)](#enter--space-to-submit-practice-mode-only)
-12. [Diagnostics center](#diagnostics-center)
-13. [Explore AQERIONX footer (Hush, Instagram, GitHub)](#explore-aqerionx-footer-hush-instagram-github)
-14. [Testing procedure — portal DOM (practice-quiz-portal.html)](#testing-procedure--portal-dom-practice-quiz-portalhtml)
-15. [Testing procedure — generic patterns (practice-quiz.html)](#testing-procedure--generic-patterns-practice-quizhtml)
-16. [Test checklist](#test-checklist)
-17. [Debugging guide](#debugging-guide)
-18. [Verifying selectors on the real portal](#verifying-selectors-on-the-real-portal)
-19. [Customizing option detection](#customizing-option-detection)
-20. [Publishing to GitHub](#publishing-to-github)
-21. [Configuring external links (Hush, Instagram, GitHub)](#configuring-external-links-hush-instagram-github)
-22. [Compatibility limitations (honest)](#compatibility-limitations-honest)
-23. [Privacy](#privacy)
-24. [Test results (v2.1.0)](#test-results-v210)
-
+6. [Files in this project](#files-in-this-project)
+7. [Permissions — what they do and why](#permissions--what-they-do-and-why)
+8. [Installation on Windows (VS Code + Chrome)](#installation-on-windows-vs-code--chrome)
+9. [Theme management (three themes)](#theme-management-three-themes)
+10. [Settings panel](#settings-panel)
+11. [Using it](#using-it)
+12. [Enter / Space-to-submit (practice mode only)](#enter--space-to-submit-practice-mode-only)
+13. [Diagnostics center](#diagnostics-center)
+14. [Explore AQERIONX footer (Hush, Instagram, GitHub)](#explore-aqerionx-footer-hush-instagram-github)
+15. [Testing procedure — portal DOM (practice-quiz-portal.html)](#testing-procedure--portal-dom-practice-quiz-portalhtml)
+16. [Testing procedure — generic patterns (practice-quiz.html)](#testing-procedure--generic-patterns-practice-quizhtml)
+17. [Test checklist](#test-checklist)
+18. [Debugging guide](#debugging-guide)
+19. [Verifying selectors on the real portal](#verifying-selectors-on-the-real-portal)
+20. [Customizing option detection](#customizing-option-detection)
+21. [Updating the public GitHub repository](#updating-the-public-github-repository)
+22. [Configuring external links (Hush, Instagram, GitHub)](#configuring-external-links-hush-instagram-github)
+23. [Compatibility limitations (honest)](#compatibility-limitations-honest)
+24. [Privacy](#privacy)
+25. [Test status (v2.1.1)](#test-status-v211)
 ---
 
 ## What changed in v2.1.1 (published repository and practice-test fix)
@@ -965,10 +964,11 @@ Use this checklist to verify KeyPilot works end-to-end. Open `practice-quiz-port
 
 ### Enter-to-submit (practice mode only)
 
-- [ ] **R1.** On `practice-quiz-portal.html`, Enable, toggle "Enter to submit" ON, press `2` (selects option), then press `Enter` → NEXT button is clicked automatically.
-- [ ] **R2.** Check DevTools Console → see `[KeyPilot] Enter pressed on practice page — clicking submit button:`.
-- [ ] **R3.** Toggle "Enter to submit" OFF. Press `2` then `Enter` → nothing happens (Enter doesn't click).
-- [ ] **R4.** Open a normal website (e.g. `https://example.com`), Enable KeyPilot, toggle "Enter to submit" ON, press `Enter` → nothing happens (page doesn't opt in via `data-keypilot-practice`). Console logs the gate message.
+- [ ] **R1.** Open `practice-quiz-portal.html` as a local file, enable the extension, and turn on the practice-submit setting.
+- [ ] **R2.** Press `2`; confirm the selected option enables the button but it still says `SUBMIT`.
+- [ ] **R3.** Press `Enter` or `Space`; the local Submit button should activate and then change to `NEXT`. It must not activate `NEXT` on subsequent key presses.
+- [ ] **R4.** Turn practice submission OFF; Enter and Space must not activate the button.
+- [ ] **R5.** Open a regular remote website, turn the setting ON, and press Enter/Space; submission must remain disabled because the page is not a local practice origin.
 
 ### GitHub footer
 
@@ -979,67 +979,36 @@ Use this checklist to verify KeyPilot works end-to-end. Open `practice-quiz-port
 
 ## Test status (v2.1.1)
 
-This section distinguishes static source review from browser runtime tests. The v2.1.1 edits were committed to the public repository, but a real Chrome runtime was not available during this update.
+The v2.1.1 source changes have been committed to the public repository. They
+were reviewed at the source level, but **the updated project has not yet been
+run in Chrome after these commits**. Do not treat the unchecked checklist as
+passed.
 
-### Tests performed (in this build environment)
+### Confirmed by source inspection
 
-| # | Test | Result |
-|---|---|---|
-| 1 | `manifest.json` validates as JSON; well-formed MV3 manifest; name is "KeyPilot by AQERIONX"; version 2.1.0. | ✅ Pass |
-| 2 | `content.js` passes Node syntax check (`node --check`). | ✅ Pass |
-| 3 | `popup.js` passes Node syntax check (`node --check`). | ✅ Pass |
-| 4 | All declared icon files exist: `icon16.png`, `icon48.png`, `icon128.png`, `logo.png`, `hush-logo.svg`, `hush-logo.png`. | ✅ Pass |
-| 5 | All asset paths referenced in `manifest.json` and `popup.html` exist on disk. | ✅ Pass |
-| 6 | All 21 element IDs referenced in `popup.js` via `getElementById` exist in `popup.html` (`copyBtn`, `diagBtn`, `diagOut`, `diagPanel`, `diagStatus`, `diagToggle`, `disableBtn`, `enableBtn`, `enterHint`, `githubLink`, `hushCard`, `instagramLink`, `practiceSubmit`, `reducedMotion`, `resetBtn`, `settingsPanel`, `settingsToggle`, `statusDot`, `statusSub`, `statusText`, `themeSelect`). | ✅ Pass |
-| 7 | All message types handled in `content.js` (`ping`, `status`, `enable`, `disable`, `setPracticeSubmit`, `diagnose`) match the messages sent by `popup.js`. | ✅ Pass |
-| 8 | `chrome.storage.local` API usage matches the manifest `storage` permission grant (keys: `keypilot.theme`, `keypilot.reducedMotion`, `keypilot.practiceSubmit`). | ✅ Pass |
-| 9 | `chrome.scripting.executeScript` target uses `allFrames: true` as documented. | ✅ Pass |
-| 10 | `chrome.tabs.create` is used for Hush, Instagram, and GitHub links (not `window.open`). | ✅ Pass |
-| 11 | CSS variables exist for all three themes (`[data-theme="peach"]`, `[data-theme="midnight"]`, `[data-theme="lavender"]`) for every token used in component styles (32+ tokens each). | ✅ Pass |
-| 12 | `prefers-reduced-motion` media query AND `html.force-reduced-motion` class are both present and collapse animations. | ✅ Pass |
-| 13 | All buttons have `:focus-visible` styles for keyboard accessibility. | ✅ Pass |
-| 14 | `practice-quiz-portal.html` has `<html lang="en" data-keypilot-practice="true">` — opts in to Enter/Space-to-submit. | ✅ Pass |
-| 15 | `GITHUB_REPOSITORY_URL` is configured as `https://github.com/monu-2008/KeyPilot`; the GitHub pill should be enabled. | Source updated; verify in Chrome |
-| 16 | `INSTAGRAM_PROFILE_URL` is set to the official `https://www.instagram.com/aqerionx/` (no placeholder). | ✅ Pass |
-| 17 | `HUSH_URL` is set to `https://hush.aqerionx.in/` (no placeholder). | ✅ Pass |
-| 18 | The genuine Hush logo was successfully downloaded from `https://hush.aqerionx.in/icon.svg` (confirmed via `curl` + web-reader fetch). The SVG content matches the live site's favicon (lowercase "h" on a dark rounded square with violet/cyan glow). | ✅ Pass |
-| 19 | The Hush logo PNG (128×128) was generated from the SVG via `cairosvg` and verified visually via VLM as "a lowercase h in a serif font, dark background with violet and teal glow blobs, modern app-icon aesthetic." | ✅ Pass |
-| 20 | The supplied paper-plane logo remains as the KeyPilot brand icon (16/48/128 PNGs + full-res `logo.png` in the header). | ✅ Pass |
-| 21 | Enter/Space-to-submit code path requires BOTH the user setting AND the page-level `data-keypilot-practice="true"` attribute (verified by reading `isPracticePageAuthorized()` in `content.js`). | ✅ Pass |
-| 22 | Enter+Space double-fire prevention: a 800ms `lastSubmitAt` debounce exists in `handleSubmitKey()`. | ✅ Pass |
-| 23 | Next-button safety: `handleSubmitKey()` checks `btnText === 'next'` and skips rather than clicking Next. | ✅ Pass |
-| 24 | Empty-submission guard: `hasSelectedAnswer()` returns false when options exist but none is selected, blocking submit. | ✅ Pass |
-| 25 | Diagnostics status states use real checks (no hardcoded success) — the success/warn/error decision is based on `resp.optionCount` and `resp.question`. | ✅ Pass |
-| 26 | Three theme pills in navbar have `data-theme-value` attributes `peach`, `midnight`, `lavender`, all present in `VALID_THEMES` set in `popup.js`. | ✅ Pass |
-| 27 | The pill selector and Settings `<select>` both call `applyTheme()` and stay in sync (verified by reading both event handlers). | ✅ Pass |
+- The manifest version, popup version, footer version, and content-script
+  version are set to 2.1.1.
+- The GitHub footer constant points to
+  `https://github.com/monu-2008/KeyPilot`.
+- Hush and Instagram links point to the configured AQERIONX destinations.
+- The practice-submit helper requires the setting to be enabled, the page
+  opt-in attribute, and a local-file or localhost origin.
+- Submit-button discovery checks the enclosing question card when the
+  detected container is the nested radio-options element.
+- The practice page now keeps the button labelled SUBMIT after option
+  selection; clicking Submit changes it to NEXT.
 
-### Tests NOT performed (require a real Chrome browser)
+### Still needs browser testing
 
-| # | Test | Why not performed | How to run it |
-|---|---|---|---|
-| A | **Load unpacked in Chrome** and verify the popup renders without console errors. | This build environment has no Chrome binary. | Load unpacked per the install guide; open the popup; check DevTools console (`F12` on the popup via right-click → Inspect). |
-| B | **Visual check of all three themes** — Peach Cream Clay (warm ivory/peach), Midnight Gradient (deep navy/plum), Lavender Glass Clay (frosted translucent). The Hush logo and paper-plane KeyPilot logo should be visible in all themes. | No display. | Open the popup; click each of the three navbar pills (Peach / Midnight / Lavender); verify each theme renders correctly. |
-| C | **Theme persistence** — switch to Midnight, close popup, reopen, verify Midnight is restored. Repeat for Lavender. | No Chrome. | Click a pill, close popup, reopen — should still be the chosen theme. |
-| D | **Settings persistence** — toggle reduced motion + Enter/Space-to-submit, close popup, reopen, verify both are still on. | No Chrome. | Toggle both settings, close popup, reopen. |
-| E | **Keyboard selection on `practice-quiz-portal.html`** — press 1-4, verify the corresponding radio is selected and the verify panel turns green. | No Chrome. | Open `practice-quiz-portal.html`, Enable the extension, press 1-4. |
-| F | **Run Diagnostics** produces a snapshot showing `question: div[data-testid="radioGroupOptions"]` and 4 options, with a green ok status. | No Chrome. | Open `practice-quiz-portal.html`, Enable, click "Diagnostics" header to expand, click "Run Diagnostics". |
-| G | **Copy Debug Report** copies the report to the clipboard. | No Chrome. | After a successful diagnostics run, click "Copy Debug Report". Paste into a text editor to verify. |
-| H | **Collapsible Diagnostics + Settings** — chevron rotates, panel reveals with animation, `aria-expanded` updates. | No Chrome. | Click the "Diagnostics" and "Settings" headers in the popup. |
-| I | **Enter-to-submit on practice page** — toggle on, select an option, press Enter → Submit button is clicked. | No Chrome. | Open `practice-quiz-portal.html`, Enable, toggle "Enter / Space to submit" ON, press `2` then `Enter`. |
-| J | **Space-to-submit on practice page** — same as I but press Space instead of Enter. | No Chrome. | Same as I, press `Space` instead. |
-| K | **Enter+Space double-fire prevention** — press Enter then immediately Space; only one submit should fire. | No Chrome. | On the practice page with submit enabled, press `Enter` then `Space` within 800ms; check console for only one "clicking submit button" log. |
-| L | **Next-button safety** — on a question where only a Next button is visible (no Submit), pressing Enter/Space should NOT click it. | No Chrome. | Inspect the practice page DOM; if only Next is visible, press Enter; verify console logs "not activating Next as a side effect". |
-| M | **Empty-submission guard** — on a question with options, don't select any, press Enter/Space; should be blocked. | No Chrome. | On the practice page, don't press 1-4, press Enter; verify console logs "no answer is selected". |
-| N | **Enter/Space gate on non-practice page** — on a normal website, pressing Enter/Space does NOT trigger anything. | No Chrome. | Open any normal website, Enable, toggle "Enter / Space to submit" ON, press `Enter`/`Space`. Verify nothing happens and console logs the gate message. |
-| O | **Reduced-motion** — animations collapse when the OS-level setting is on OR when the extension's "Reduced motion" toggle is on. | No Chrome / no OS setting. | Enable "Reduce motion" in Windows Settings → Accessibility → Visual effects; OR toggle the extension's "Reduced motion" in Settings. |
-| P | **Hush card click** — clicking the Hush card opens `https://hush.aqerionx.in/` in a new tab. | No Chrome. | Open the popup, click the Hush card, verify a new tab opens to the Hush site. |
-| Q | **Instagram pill click** — clicking opens `https://www.instagram.com/aqerionx/` in a new tab. | No Chrome. | Open the popup, click the Instagram pill, verify a new tab opens to the official AQERIONX Instagram profile. |
-| R | **GitHub pill** — opens the published repository in a new tab. | No Chrome. | Reload the extension, open the popup, and click the GitHub pill. | |
-| T | **Real portal test.** | The portal DOM was reported but not independently verified. | Test on a real practice quiz on the portal, not a graded one. |
-
-**Honest statement:** The extension has **not** been tested in a real Chrome browser in this build environment. The code passes static validation (JSON syntax, JS syntax, asset references including the genuine Hush logo, ID/message consistency, three-theme CSS variable coverage, accessibility hooks, Enter/Space-to-submit gate logic with all four safety guards, real-checks-not-hardcoded diagnostics) but the visual rendering and runtime behavior must be verified by you in Chrome per the "Tests NOT performed" table above and the [Test checklist](#test-checklist).
-
-The Hush logo was genuinely retrieved from the live site (not invented) — confirmed by downloading `https://hush.aqerionx.in/icon.svg` and verifying its content matches the site's `<link rel="icon">` and PWA manifest. The Instagram URL is the official `https://www.instagram.com/aqerionx/` per user instruction. The GitHub footer URL is configured as `https://github.com/monu-2008/KeyPilot`.
-
-
+- Load unpacked in Chrome and check the popup console for errors.
+- Switch through Peach, Midnight, and Lavender and confirm theme persistence.
+- Enable/disable shortcuts and confirm keys 1–4 select the intended option.
+- Run Diagnostics and verify the question/option counts on the included
+  practice page.
+- Test Enter and Space only on the local practice page with the practice
+  setting enabled; ensure they activate Submit once, never Next.
+- Click Hush, Instagram, and GitHub links and confirm their destinations.
+- Verify the real quiz page selectors only in a permitted test context;
+  the reported DOM has not been independently validated against a live graded
+  assessment.
 
