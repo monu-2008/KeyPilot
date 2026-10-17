@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <defs>
+    <linearGradient id="base" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FFF7F3"/>
+      <stop offset="34%" stop-color="#FFF0E8"/>
+      <stop offset="68%" stop-color="#F8F0FB"/>
+      <stop offset="100%" stop-color="#F4F1FF"/>
+    </linearGradient>
+    <radialGradient id="peachGlow">
+      <stop offset="0%" stop-color="#FFCBB8" stop-opacity="0.72"/>
+      <stop offset="54%" stop-color="#FFD9C9" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#FFD9C9" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="lavenderGlow">
+      <stop offset="0%" stop-color="#CDB9FF" stop-opacity="0.60"/>
+      <stop offset="56%" stop-color="#D9C8FF" stop-opacity="0.24"/>
+      <stop offset="100%" stop-color="#D9C8FF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="pinkGlow">
+      <stop offset="0%" stop-color="#FFD6E5" stop-opacity="0.64"/>
+      <stop offset="58%" stop-color="#FFE0EB" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#FFE0EB" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="blueGlow">
+      <stop offset="0%" stop-color="#A8E4F7" stop-opacity="0.45"/>
+      <stop offset="60%" stop-color="#C5EDFA" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#C5EDFA" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="ribbon" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#A579FF" stop-opacity="0.19"/>
+      <stop offset="52%" stop-color="#E8BDF7" stop-opacity="0.16"/>
+      <stop offset="100%" stop-color="#6CC9E8" stop-opacity="0.20"/>
+    </linearGradient>
+    <filter id="blurLarge" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="64"/>
+    </filter>
+    <filter id="blurSoft" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="28"/>
+    </filter>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#base)"/>
+  <g filter="url(#blurLarge)">
+    <ellipse cx="145" cy="170" rx="340" ry="280" fill="url(#peachGlow)"/>
+    <ellipse cx="520" cy="60" rx="370" ry="250" fill="url(#lavenderGlow)"/>
+    <ellipse cx="970" cy="165" rx="390" ry="250" fill="url(#pinkGlow)"/>
+    <ellipse cx="1515" cy="135" rx="420" ry="300" fill="url(#peachGlow)"/>
+    <ellipse cx="1870" cy="420" rx="310" ry="350" fill="url(#lavenderGlow)"/>
+    <ellipse cx="250" cy="710" rx="430" ry="310" fill="url(#lavenderGlow)"/>
+    <ellipse cx="860" cy="810" rx="460" ry="310" fill="url(#peachGlow)"/>
+    <ellipse cx="1420" cy="800" rx="480" ry="350" fill="url(#pinkGlow)"/>
+    <ellipse cx="1820" cy="970" rx="310" ry="250" fill="url(#blueGlow)"/>
+  </g>
+  <g filter="url(#blurSoft)" opacity="0.7">
+    <circle cx="95" cy="470" r="92" fill="#FAD3FF" opacity="0.38"/>
+    <circle cx="470" cy="410" r="82" fill="#FFD0C0" opacity="0.38"/>
+    <circle cx="765" cy="180" r="76" fill="#D8C7FF" opacity="0.38"/>
+    <circle cx="1210" cy="535" r="120" fill="#D2C4FF" opacity="0.30"/>
+    <circle cx="1605" cy="360" r="88" fill="#FFCDBF" opacity="0.32"/>
+    <circle cx="1690" cy="760" r="110" fill="#D5D9FF" opacity="0.34"/>
+    <circle cx="430" cy="975" r="110" fill="#FFD4E6" opacity="0.34"/>
+  </g>
+  <!-- Abstract soft flowing ribbons; intentionally subtle so content remains readable -->
+  <g fill="none" stroke-linecap="round">
+    <path d="M-100 310 C180 90, 310 470, 610 270 S1010 10, 1280 245 S1670 505, 2020 230" stroke="url(#ribbon)" stroke-width="2.4"/>
+    <path d="M-120 348 C160 128, 300 500, 600 302 S1000 46, 1270 280 S1660 538, 2020 266" stroke="#FFFFFF" stroke-opacity="0.46" stroke-width="1.8"/>
+    <path d="M-100 900 C160 735, 380 1020, 650 850 S1050 665, 1290 865 S1680 1050, 2030 820" stroke="url(#ribbon)" stroke-width="2.8"/>
+    <path d="M-110 934 C150 770, 370 1055, 640 884 S1040 700, 1280 900 S1670 1080, 2020 858" stroke="#FFFFFF" stroke-opacity="0.40" stroke-width="1.9"/>
+  </g>
+  <!-- A few very soft translucent orbs, placed around the edges rather than behind the main reading area -->
+  <g opacity="0.30" filter="url(#blurSoft)">
+    <circle cx="90" cy="70" r="45" fill="#FFFFFF"/>
+    <circle cx="1830" cy="120" r="66" fill="#FFFFFF"/>
+    <circle cx="1850" cy="650" r="56" fill="#F4C9FF"/>
+    <circle cx="80" cy="1000" r="70" fill="#B7DFFF"/>
+  </g>
+</svg>
