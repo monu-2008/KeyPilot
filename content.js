@@ -517,10 +517,10 @@
   }
 
   /**
-   * Find a Submit/Check/Verify button inside the current question scope; never treat Next as submission.
-   * Looks for common patterns: button with text Submit/Next, [type="submit"],
-   * [data-testid="submitButton"], .actionButton.
-   * Returns null if not found.
+   * Find a Submit/Check/Verify button inside the current question scope.
+   * If the detector returns the nested radio-options container, the enclosing
+   * question card is checked too. Buttons labelled Next/Continue are excluded.
+   * Returns null if no eligible button is found.
    */
   function findSubmitButton(questionEl) {
     if (!questionEl) return null;
