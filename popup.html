@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="peach">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>KeyPilot by AQERIONX</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="app" data-theme="peach">
+
+    <!-- ===================== PILL NAVBAR ===================== -->
+    <nav class="navbar" aria-label="KeyPilot">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <img src="icons/logo.png" alt="" width="28" height="28" />
+        </div>
+        <div class="brand-text">
+          <div class="wordmark">KeyPilot</div>
+          <div class="brand-sub">by AQERIONX</div>
+        </div>
+      </div>
+
+      <div class="theme-pills" role="radiogroup" aria-label="Theme">
+        <button class="theme-pill" data-theme-value="peach" role="radio" aria-checked="true" type="button" title="Peach Cream Clay">Peach</button>
+        <button class="theme-pill" data-theme-value="midnight" role="radio" aria-checked="false" type="button" title="Midnight Gradient">Midnight</button>
+        <button class="theme-pill" data-theme-value="lavender" role="radio" aria-checked="false" type="button" title="Lavender Glass Clay">Lavender</button>
+      </div>
+    </nav>
+
+    <div class="divider" aria-hidden="true"></div>
+
+    <!-- ===================== STATUS CARD ===================== -->
+    <section class="status-card" aria-live="polite">
+      <div class="status-row">
+        <span class="status-dot" id="statusDot" aria-hidden="true"></span>
+        <div class="status-text">
+          <div class="status-label" id="statusText">Checking…</div>
+          <div class="status-sub" id="statusSub">Reading active tab</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== SHORTCUTS ===================== -->
+    <section class="section">
+      <h2 class="section-title">Keyboard Shortcuts</h2>
+      <div class="shortcut-grid">
+        <div class="shortcut-card" tabindex="0">
+          <kbd class="key">1</kbd>
+          <span class="key-desc">First option</span>
+        </div>
+        <div class="shortcut-card" tabindex="0">
+          <kbd class="key">2</kbd>
+          <span class="key-desc">Second option</span>
+        </div>
+        <div class="shortcut-card" tabindex="0">
+          <kbd class="key">3</kbd>
+          <span class="key-desc">Third option</span>
+        </div>
+        <div class="shortcut-card" tabindex="0">
+          <kbd class="key">4</kbd>
+          <span class="key-desc">Fourth option</span>
+        </div>
+      </div>
+      <p class="hint">
+        Ignored while typing in text fields, or when Ctrl / Cmd / Alt is held. Holding a key selects once.
+        <span id="enterHint" class="hint-detail" hidden>Enter / Space submits in practice mode only — never on live quizzes.</span>
+      </p>
+    </section>
+
+    <!-- ===================== CONTROLS ===================== -->
+    <section class="controls">
+      <button id="enableBtn"  class="btn btn-primary"   type="button">
+        <span class="btn-label">Enable on this tab</span>
+      </button>
+      <button id="disableBtn" class="btn btn-secondary" type="button" disabled>
+        <span class="btn-label">Disable</span>
+      </button>
+    </section>
+
+    <!-- ===================== DIAGNOSTICS ===================== -->
+    <section class="section">
+      <button id="diagToggle" class="accordion-header" type="button" aria-expanded="false" aria-controls="diagPanel">
+        <span class="accordion-title">Diagnostics</span>
+        <svg class="accordion-chev" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
+      <div id="diagPanel" class="diag-panel" hidden>
+        <div id="diagStatus" class="diag-status" role="status" aria-live="polite">
+          Click "Run Diagnostics" to inspect the active tab.
+        </div>
+        <pre id="diagOut" class="diag-out" aria-label="Diagnostics output"></pre>
+        <div class="diag-actions">
+          <button id="diagBtn" class="btn btn-tertiary btn-small" type="button">Run Diagnostics</button>
+          <button id="copyBtn" class="btn btn-tertiary btn-small" type="button" disabled>Copy Debug Report</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== SETTINGS ===================== -->
+    <section class="section">
+      <button id="settingsToggle" class="accordion-header" type="button" aria-expanded="false" aria-controls="settingsPanel">
+        <span class="accordion-title">Settings</span>
+        <svg class="accordion-chev" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
+      <div id="settingsPanel" class="settings-panel" hidden>
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-name">Theme</div>
+            <div class="setting-desc">Peach · Midnight · Lavender</div>
+          </div>
+          <div class="setting-control">
+            <select id="themeSelect" class="select" aria-label="Theme">
+              <option value="peach">Peach Cream Clay</option>
+              <option value="midnight">Midnight Gradient</option>
+              <option value="lavender">Lavender Glass Clay</option>
+            </select>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-name">Reduced motion</div>
+            <div class="setting-desc">Disable animations</div>
+          </div>
+          <div class="setting-control">
+            <label class="switch">
+              <input type="checkbox" id="reducedMotion">
+              <span class="switch-track"><span class="switch-thumb"></span></span>
+            </label>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-name">Enter / Space to submit</div>
+            <div class="setting-desc">Practice mode only — never on live quizzes</div>
+          </div>
+          <div class="setting-control">
+            <label class="switch">
+              <input type="checkbox" id="practiceSubmit">
+              <span class="switch-track"><span class="switch-thumb"></span></span>
+            </label>
+          </div>
+        </div>
+        <div class="setting-actions">
+          <button id="resetBtn" class="btn btn-tertiary btn-small" type="button">Reset to defaults</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== EXPLORE AQERIONX ===================== -->
+    <section class="explore-section">
+      <div class="explore-title">Explore AQERIONX</div>
+
+      <a id="hushCard" class="hush-card" href="#" target="_blank" rel="noopener noreferrer"
+         aria-label="Open Hush — Private emoji and image messages">
+        <img src="icons/hush-logo.png" alt="Hush logo" class="hush-logo" width="38" height="38" />
+        <div class="hush-text">
+          <div class="hush-name">Hush</div>
+          <div class="hush-sub">Private emoji &amp; image messages</div>
+          <div class="hush-url">hush.aqerionx.in</div>
+        </div>
+        <svg class="hush-arrow" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M7 17 17 7"/>
+          <path d="M7 7h10v10"/>
+        </svg>
+      </a>
+
+      <div class="link-pills">
+        <a id="instagramLink" class="link-pill instagram" href="#" target="_blank" rel="noopener noreferrer"
+           aria-label="Follow AQERIONX on Instagram at instagram.com/aqerionx">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true">
+            <path d="M12 2.16c3.2 0 3.58.01 4.85.07 1.17.05 1.8.25 2.23.41.56.22.96.48 1.38.9.42.42.68.82.9 1.38.16.42.36 1.06.41 2.23.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.05 1.17-.25 1.8-.41 2.23-.22.56-.48.96-.9 1.38-.42.42-.82.68-1.38.9-.42.16-1.06.36-2.23.41-1.27.06-1.65.07-4.85.07s-3.58-.01-4.85-.07c-1.17-.05-1.8-.25-2.23-.41a3.7 3.7 0 0 1-1.38-.9 3.7 3.7 0 0 1-.9-1.38c-.16-.42-.36-1.06-.41-2.23C2.17 15.58 2.16 15.2 2.16 12s.01-3.58.07-4.85c.05-1.17.25-1.8.41-2.23.22-.56.48-.96.9-1.38.42-.42.82-.68 1.38-.9.42-.16 1.06-.36 2.23-.41C8.42 2.17 8.8 2.16 12 2.16zm0 1.62c-3.15 0-3.52.01-4.76.07-1.15.05-1.77.24-2.19.4-.55.21-.94.47-1.35.88-.41.41-.67.8-.88 1.35-.16.42-.35 1.04-.4 2.19-.06 1.24-.07 1.61-.07 4.76s.01 3.52.07 4.76c.05 1.15.24 1.77.4 2.19.21.55.47.94.88 1.35.41.41.8.67 1.35.88.42.16 1.04.35 2.19.4 1.24.06 1.61.07 4.76.07s3.52-.01 4.76-.07c1.15-.05 1.77-.24 2.19-.4.55-.21.94-.47 1.35-.88.41-.41.67-.8.88-1.35.16-.42.35-1.04.4-2.19.06-1.24.07-1.61.07-4.76s-.01-3.52-.07-4.76c-.05-1.15-.24-1.77-.4-2.19a3.6 3.6 0 0 0-.88-1.35 3.6 3.6 0 0 0-1.35-.88c-.42-.16-1.04-.35-2.19-.4-1.24-.06-1.61-.07-4.76-.07zm0 2.76a5.46 5.46 0 1 1 0 10.92 5.46 5.46 0 0 1 0-10.92zm0 1.62a3.84 3.84 0 1 0 0 7.68 3.84 3.84 0 0 0 0-7.68zm5.65-2.88a1.28 1.28 0 1 1 0 2.56 1.28 1.28 0 0 1 0-2.56z"/>
+          </svg>
+          <span>Instagram</span>
+          <span class="ig-handle">@aqerionx</span>
+        </a>
+
+        <a id="githubLink" class="link-pill github disabled" href="#" target="_blank" rel="noopener noreferrer"
+           aria-label="View on GitHub (link will be configured)">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true">
+            <path d="M12 .5C5.73.5.5 5.73.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56 0-.27-.01-1.17-.02-2.12-3.2.7-3.88-1.36-3.88-1.36-.52-1.33-1.27-1.68-1.27-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.75 2.68 1.24 3.34.95.1-.74.4-1.24.72-1.53-2.55-.29-5.23-1.28-5.23-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.46.11-3.05 0 0 .96-.31 3.15 1.18a10.9 10.9 0 0 1 5.74 0c2.19-1.49 3.15-1.18 3.15-1.18.62 1.59.23 2.76.11 3.05.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.4-5.25 5.69.41.36.78 1.06.78 2.14 0 1.55-.01 2.8-.01 3.18 0 .31.21.68.8.56C20.21 21.39 23.5 17.08 23.5 12 23.5 5.73 18.27.5 12 .5z"/>
+          </svg>
+          <span>GitHub</span>
+        </a>
+      </div>
+    </section>
+
+    <!-- ===================== FOOTER ===================== -->
+    <footer class="footer">
+      <div class="footer-line">
+        <span class="footer-brand">AQERIONX</span>
+        <span class="footer-dot" aria-hidden="true">·</span>
+        <span class="footer-version">v2.1.0</span>
+      </div>
+      <div class="footer-tagline">Manual submission, always</div>
+    </footer>
+
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

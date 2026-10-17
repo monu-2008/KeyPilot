@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en" data-keypilot-practice="true">
+<!-- The data-keypilot-practice="true" attribute on <html> opts this page in
+     to KeyPilot's Enter-to-submit feature. The extension will ONLY click the
+     Submit/Next button via Enter when BOTH:
+       1. The user has enabled "Enter to submit" in the popup Settings, AND
+       2. The current page has this attribute set to "true".
+     Live portal pages never set this attribute, so Enter-to-submit is
+     impossible on a real graded or monitored quiz. -->
+<!--
+  Quiz Keyboard Navigator — Portal DOM Practice Page
+  ==================================================
+  This page reproduces the DOM structure reported in the inspection report:
+
+    #root
+    └── #desktop-layout
+        └── [data-testid="card"]                     ← quiz card (question container)
+            ├── [class*="QuestionContent"]            ← question text
+            ├── div[data-testid="radioGroupOptions"]   ← answer container
+            │   └── div.BaseRadioButtonWrapper-bjpxEr  ← per-option wrapper
+            │       └── label.radioButtonLabel          ← visible label
+            │           ├── input[type="radio"]         ← hidden radio
+            │           └── span                        ← visible option text
+            └── button.actionButton                     ← SUBMIT / NEXT
+
+  The styled-components hash suffix (-bjpxEr) is included to verify the
+  extension uses [class*="BaseRadioButtonWrapper"] (partial match) rather
+  than the exact full class name.
+
+  The SUBMIT button changes to NEXT after an option is selected, simulating
+  the React state transition reported on the real portal. The extension
+  does NOT touch this button — it stays under manual user control.
+
+  HOW TO USE:
+    1. Open this file in Chrome (double-click or drag into Chrome).
+    2. Click the extension toolbar icon → "Enable on this tab".
+    3. Follow the tests below.
+    4. Open DevTools (F12) → Console to see [Quiz Keyboard Navigator] logs.
+    5. Click "Run diagnose" in the popup to see detected question + options.
+-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quiz Keyboard Navigator — Portal DOM Practice</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.5;
+      color: #0f172a;
+      background: #f1f5f9;
+    }
+    #root { min-height: 100vh; }
+    #desktop-layout {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 24px 16px 80px;
+    }
+    h1 { font-size: 22px; margin-bottom: 4px; }
+    .intro { color: #475569; font-size: 14px; margin-bottom: 24px; }
+
+    /* The quiz card — matches [data-testid="card"] */
+    [data-testid="card"] {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+
+    /* Question text — matches [class*="QuestionContent"] */
+    [class*="QuestionContent"] {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: #0f172a;
+    }
+
+    /* Answer container — matches div[data-testid="radioGroupOptions"] */
+    [data-testid="radioGroupOptions"] {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* Per-option wrapper — matches [class*="BaseRadioButtonWrapper"].
+       The hash suffix -bjpxEr is intentionally included to verify
+       partial class matching. */
+    [class*="BaseRadioButtonWrapper"] {
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 12px 16px;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      position: relative;
+    }
+    [class*="BaseRadioButtonWrapper"]:hover {
+      border-color: #93c5fd;
+    }
+    [class*="BaseRadioButtonWrapper"].is-checked {
+      border-color: #2563eb;
+      background: #eff6ff;
+    }
+
+    /* The visible label — matches label.radioButtonLabel */
+    label.radioButtonLabel {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      font-size: 15px;
+      color: #1e293b;
+      position: relative;
+    }
+
+    /* Hidden radio — the standard styled-components pattern.
+       The radio is visually hidden but still interactive via the label. */
+    label.radioButtonLabel input[type="radio"] {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+      pointer-events: none;
+    }
+
+    /* Custom radio circle (visual replacement for the native radio) */
+    .radio-circle {
+      width: 20px;
+      height: 20px;
+      border: 2px solid #cbd5e1;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: border-color 0.15s;
+    }
+    [class*="BaseRadioButtonWrapper"].is-checked .radio-circle {
+      border-color: #2563eb;
+    }
+    [class*="BaseRadioButtonWrapper"].is-checked .radio-circle::after {
+      content: '';
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #2563eb;
+    }
+
+    /* Action button (SUBMIT / NEXT) */
+    .actionButton {
+      margin-top: 20px;
+      padding: 12px 32px;
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .actionButton:hover { background: #1d4ed8; }
+    .actionButton:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Disabled option styling */
+    [class*="BaseRadioButtonWrapper"].is-disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    [class*="BaseRadioButtonWrapper"].is-disabled:hover {
+      border-color: #e2e8f0;
+    }
+
+    /* Test controls */
+    .controls {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+    .controls button {
+      font: inherit;
+      font-size: 13px;
+      padding: 8px 16px;
+      background: #475569;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-right: 8px;
+    }
+    .controls button:hover { background: #334155; }
+
+    /* Verification panels */
+    .verify {
+      margin-top: 16px;
+      padding: 10px 14px;
+      border-radius: 6px;
+      background: #f1f5f9;
+      border-left: 3px solid #94a3b8;
+      font-size: 13px;
+      color: #475569;
+    }
+    .verify.pass { background: #dcfce7; color: #166534; border-left-color: #16a34a; }
+    .verify.fail { background: #fee2e2; color: #991b1b; border-left-color: #dc2626; }
+
+    .test-section { margin-bottom: 32px; }
+    .test-section h2 {
+      font-size: 16px;
+      margin-bottom: 8px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid #cbd5e1;
+    }
+    .test-section .desc { font-size: 13px; color: #64748b; margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+<div id="root">
+  <div id="desktop-layout">
+    <h1>Quiz Keyboard Navigator — Portal DOM Practice</h1>
+    <p class="intro">
+      This page reproduces the reported portal DOM structure:
+      <code>[data-testid="card"]</code> → <code>[data-testid="radioGroupOptions"]</code> →
+      <code>[class*="BaseRadioButtonWrapper"]</code> → <code>label.radioButtonLabel</code> → hidden
+      <code>input[type="radio"]</code>. Enable the extension, then press 1–4.
+    </p>
+
+    <div class="controls">
+      <button id="renderDynamic" type="button">Render dynamic question (SPA test)</button>
+      <button id="resetAll" type="button">Reset all selections</button>
+    </div>
+
+    <!-- =====================================================================
+         TEST 1: Standard portal question with 4 options
+         ===================================================================== -->
+    <div class="test-section">
+      <h2>Test 1 — Standard portal question (4 options, hidden radios)</h2>
+      <p class="desc">Press <strong>2</strong> to select the second option. The blue indicator should appear around the visible label, and the custom radio circle should fill in.</p>
+      <div data-testid="card" data-question-index="1">
+        <div class="QuestionContent-sc-abc123">Q1. What is the capital of France?</div>
+        <div data-testid="radioGroupOptions">
+          <div class="BaseRadioButtonWrapper-bjpxEr">
+            <label class="radioButtonLabel">
+              <input type="radio" name="q1" value="lyon">
+              <span class="radio-circle"></span>
+              <span>Lyon</span>
+            </label>
+          </div>
+          <div class="BaseRadioButtonWrapper-bjpxEr">
+            <label class="radioButtonLabel">
+              <input type="radio" name="q1" value="paris">
+              <span class="radio-circle"></span>
+              <span>Paris</span>
+            </label>
+          </div>
+          <div class="BaseRadioButtonWrapper-bjpxEr">
+            <label class="radioButtonLabel">
+              <input type="radio" name="q1" value="nice">
+              <span class="radio-circle"></span>
+              <span>Nice</span>
+            </label>
+          </div>
+          <div class="BaseRadioButtonWrapper-bjpxEr">
+            <label class="radioButtonLabel">
+              <input type="radio" name="q1" value="marseille">
+              <span class="radio-circle"></span>
+              <span>Marseille</span>
+            </label>
+          </div>
+        </div>
+        <button class="actionButton" disabled>SUBMIT</button>
+        <div class="verify" id="verify-1">Press a number key to verify.</div>
+      </div>
+    </div>
+
+    <!-- =====================================================================
+         TEST 2: Question with a disabled option
+         ===================================================================== -->
+    <div class="test-section">
+      <h2>Test 2 — Disabled option at position 2</h2>
+      <p class="desc">Option 2 is disabled. Pressing <strong>2</strong> should do nothing (the console will log "not interactive"). Press <strong>3</strong> to select the third option.</p>
+      <div data-testid="card" data-question-index="2">
+        <div class="QuestionContent-sc-def456">Q2. Which is a prime number?</div>
+        <div data-testid="radioGroupOptions">
+          <div class="BaseRadioButtonWrapper-bjpxEr">
+            <label class="radioButtonLabel">
+              <input type="radio" name="q2" value="9">
+              <span class="radio-circle"></span>
+              <span>9</span>
+            </label>
+          </div>
+          <div class="BaseRadioButtonWrapper-bjpxEr is-disabled">
+            <label class="radioButtonLabel">
+              <input type="radio" name="q2" value="10" disabled>
+              <span class="radio-circle"></span>
+              <span>10 (disabled)</span>
+            </label>
+          </div>
+          <div class="BaseRadioButtonWrapper-bjpxEr">
+            <label class="radioButtonLabel">
+              <input type="radio" name="q2" value="11">
+              <span class="radio-circle"></span>
+              <span>11</span>
+            </label>
+          </div>
+          <div class="BaseRadioButtonWrapper-bjpxEr">
+            <label class="radioButtonLabel">
+              <input type="radio" name="q2" value="12">
+              <span class="radio-circle"></span>
+              <span>12</span>
+            </label>
+          </div>
+        </div>
+        <button class="actionButton" disabled>SUBMIT</button>
+        <div class="verify" id="verify-2">Press a number key to verify.</div>
+      </div>
+    </div>
+
+    <!-- =====================================================================
+         TEST 3: Text-input keyboard protection
+         ===================================================================== -->
+    <div class="test-section">
+      <h2>Test 3 — Text input protection</h2>
+      <p class="desc">Click into the text field and type <code>1234</code>. The text field should fill with "1234" and NO quiz option should be selected.</p>
+      <div data-testid="card" data-question-index="3">
+        <div class="QuestionContent-sc-ghi789">Q3. Type your name (filler — should not be affected while typing).</div>
+        <div data-testid="radioGroupOptions">
+          <div class="BaseRadioButtonWrapper-bjpxEr">
+            <label class="radioButtonLabel">
+              <input type="radio" name="q3" value="a">
+              <span class="radio-circle"></span>
+              <span>Option A</span>
+            </label>
+          </div>
+          <div class="BaseRadioButtonWrapper-bjpxEr">
+            <label class="radioButtonLabel">
+              <input type="radio" name="q3" value="b">
+              <span class="radio-circle"></span>
+              <span>Option B</span>
+            </label>
+          </div>
+          <div class="BaseRadioButtonWrapper-bjpxEr">
+            <label class="radioButtonLabel">
+              <input type="radio" name="q3" value="c">
+              <span class="radio-circle"></span>
+              <span>Option C</span>
+            </label>
+          </div>
+          <div class="BaseRadioButtonWrapper-bjpxEr">
+            <label class="radioButtonLabel">
+              <input type="radio" name="q3" value="d">
+              <span class="radio-circle"></span>
+              <span>Option D</span>
+            </label>
+          </div>
+        </div>
+        <input type="text" id="typing-field" placeholder="Type 1234 here — shortcuts must NOT fire while focused here" style="margin-top:12px; width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:6px; font-size:14px;" autocomplete="off">
+        <button class="actionButton" disabled>SUBMIT</button>
+        <div class="verify" id="verify-3">Click into the field, type 1234, then click elsewhere.</div>
+      </div>
+    </div>
+
+    <!-- =====================================================================
+         TEST 4: Dynamic question rendering (SPA pattern)
+         ===================================================================== -->
+    <div class="test-section">
+      <h2>Test 4 — Dynamically rendered question</h2>
+      <p class="desc">Click <strong>Render dynamic question</strong> at the top, then press <strong>2</strong>. The extension should detect the new question without needing a page reload.</p>
+      <div id="dynamic-host">
+        <p style="color:#64748b; font-size:13px; padding:16px; border:1px dashed #94a3b8; border-radius:8px;">
+          Click "Render dynamic question" above to inject a new question here.
+        </p>
+      </div>
+      <div class="verify" id="verify-4">Render the question, then press a number key.</div>
+    </div>
+
+    <!-- =====================================================================
+         TEST 5: Enable/Disable + duplicate-injection
+         ===================================================================== -->
+    <div class="test-section">
+      <h2>Test 5 — Enable / Disable / duplicate-injection</h2>
+      <p class="desc">
+        1. Popup → <strong>Enable</strong> (don't close popup yet).<br>
+        2. Click <strong>Enable</strong> again.<br>
+        3. Close popup. Press <strong>1</strong>. Exactly ONE selection should happen (check the log below).<br>
+        4. Popup → <strong>Disable</strong>. Press <strong>1</strong>. Nothing should happen.<br>
+        5. Popup → <strong>Enable</strong>. Press <strong>2</strong>. Exactly ONE selection.
+      </p>
+      <div data-testid="card" data-question-index="5">
+        <div class="QuestionContent-sc-jkl012">Q5. Duplicate-injection test.</div>
+        <div data-testid="radioGroupOptions">
+          <div class="BaseRadioButtonWrapper-bjpxEr">
+            <label class="radioButtonLabel">
+              <input type="radio" name="q5" value="a">
+              <span class="radio-circle"></span>
+              <span>Alpha</span>
+            </label>
+          </div>
+          <div class="BaseRadioButtonWrapper-bjpxEr">
+            <label class="radioButtonLabel">
+              <input type="radio" name="q5" value="b">
+              <span class="radio-circle"></span>
+              <span>Beta</span>
+            </label>
+          </div>
+          <div class="BaseRadioButtonWrapper-bjpxEr">
+            <label class="radioButtonLabel">
+              <input type="radio" name="q5" value="c">
+              <span class="radio-circle"></span>
+              <span>Gamma</span>
+            </label>
+          </div>
+          <div class="BaseRadioButtonWrapper-bjpxEr">
+            <label class="radioButtonLabel">
+              <input type="radio" name="q5" value="d">
+              <span class="radio-circle"></span>
+              <span>Delta</span>
+            </label>
+          </div>
+        </div>
+        <button class="actionButton" disabled>SUBMIT</button>
+      </div>
+      <div class="verify" id="verify-5" style="max-height:120px; overflow:auto; font-family:ui-monospace,monospace; font-size:11.5px;">(log will appear here)</div>
+    </div>
+  </div>
+</div>
+
+<!-- =====================================================================
+     Page logic — simulates the React state behavior (SUBMIT → NEXT) using
+     vanilla JS. NOT part of the extension.
+     ===================================================================== -->
+<script>
+  (function () {
+    'use strict';
+
+    // --- Helpers ---
+    function setVerify(id, pass, msg) {
+      const el = document.getElementById(id);
+      el.textContent = msg;
+      el.classList.toggle('pass', pass === true);
+      el.classList.toggle('fail', pass === false);
+    }
+
+    function getCard(index) {
+      return document.querySelector(`[data-question-index="${index}"]`);
+    }
+
+    // Simulate React state: when a radio is selected, update the visual
+    // state of the wrapper and toggle the button from SUBMIT to NEXT.
+    function syncCardUI(card) {
+      if (!card) return;
+      const radios = card.querySelectorAll('input[type="radio"]');
+      const wrappers = card.querySelectorAll('[class*="BaseRadioButtonWrapper"]');
+      const btn = card.querySelector('.actionButton');
+      let selectedValue = null;
+
+      radios.forEach((radio, i) => {
+        const wrapper = wrappers[i];
+        if (radio.checked) {
+          wrapper.classList.add('is-checked');
+          selectedValue = radio.value;
+        } else {
+          wrapper.classList.remove('is-checked');
+        }
+      });
+
+      if (btn) {
+        if (selectedValue !== null) {
+          btn.textContent = 'NEXT';
+          btn.disabled = false;
+        } else {
+          btn.textContent = 'SUBMIT';
+          btn.disabled = true;
+        }
+      }
+
+      return selectedValue;
+    }
+
+    // --- Wire up all cards ---
+    document.querySelectorAll('[data-testid="card"]').forEach(card => {
+      const index = card.getAttribute('data-question-index');
+      if (!index) return;
+
+      const radios = card.querySelectorAll('input[type="radio"]');
+      radios.forEach(radio => {
+        radio.addEventListener('change', () => {
+          const value = syncCardUI(card);
+          const expected = {
+            '1': 'paris',
+            '2': '11',
+            '5': null  // any selection is fine for the dup test
+          };
+          if (expected[index] !== null) {
+            const ok = value === expected[index];
+            setVerify('verify-' + index, ok,
+              (ok ? 'PASS: ' : 'TRY: ') + 'selected "' + value + '"' +
+              (ok ? ' — correct!' : ' (expected "' + expected[index] + '")'));
+          }
+        });
+      });
+    });
+
+    // --- Test 3: typing protection ---
+    (function () {
+      const field = document.getElementById('typing-field');
+      const card = getCard('3');
+      const radios = card.querySelectorAll('input[type="radio"]');
+      let hadChange = false;
+      radios.forEach(r => r.addEventListener('change', () => { hadChange = true; }));
+      field.addEventListener('input', () => {
+        setTimeout(() => {
+          if (hadChange) {
+            setVerify('verify-3', false, 'FAIL: a radio changed while typing in the text field.');
+            hadChange = false;
+          } else if (field.value === '1234') {
+            setVerify('verify-3', true, 'PASS: typed "1234" with no radio change.');
+          }
+        }, 0);
+      });
+    })();
+
+    // --- Test 4: dynamic question rendering ---
+    (function () {
+      const host = document.getElementById('dynamic-host');
+      const btn = document.getElementById('renderDynamic');
+      let rendered = false;
+      btn.addEventListener('click', () => {
+        if (rendered) return;
+        rendered = true;
+
+        // Build the dynamic question with the SAME portal DOM structure.
+        const card = document.createElement('div');
+        card.setAttribute('data-testid', 'card');
+        card.setAttribute('data-question-index', '4');
+        card.innerHTML = `
+          <div class="QuestionContent-sc-dyn999">Q4. (Dynamically rendered) Smallest prime number?</div>
+          <div data-testid="radioGroupOptions">
+            <div class="BaseRadioButtonWrapper-bjpxEr">
+              <label class="radioButtonLabel">
+                <input type="radio" name="q4" value="0">
+                <span class="radio-circle"></span>
+                <span>0</span>
+              </label>
+            </div>
+            <div class="BaseRadioButtonWrapper-bjpxEr">
+              <label class="radioButtonLabel">
+                <input type="radio" name="q4" value="1">
+                <span class="radio-circle"></span>
+                <span>1</span>
+              </label>
+            </div>
+            <div class="BaseRadioButtonWrapper-bjpxEr">
+              <label class="radioButtonLabel">
+                <input type="radio" name="q4" value="2">
+                <span class="radio-circle"></span>
+                <span>2</span>
+              </label>
+            </div>
+            <div class="BaseRadioButtonWrapper-bjpxEr">
+              <label class="radioButtonLabel">
+                <input type="radio" name="q4" value="3">
+                <span class="radio-circle"></span>
+                <span>3</span>
+              </label>
+            </div>
+          </div>
+          <button class="actionButton" disabled>SUBMIT</button>
+        `;
+        host.innerHTML = '';
+        host.appendChild(card);
+
+        // Wire up the new card the same way as static ones.
+        const radios = card.querySelectorAll('input[type="radio"]');
+        radios.forEach(radio => {
+          radio.addEventListener('change', () => {
+            const value = syncCardUI(card);
+            const ok = value === '2';
+            setVerify('verify-4', ok,
+              (ok ? 'PASS: ' : 'TRY: ') + 'selected "' + value + '"' +
+              (ok ? ' — 2 is the smallest prime!' : ''));
+          });
+        });
+
+        setVerify('verify-4', null, 'Question rendered. Now press 2 (scroll so Q4 is centered if needed).');
+      });
+    })();
+
+    // --- Test 5: duplicate-injection log ---
+    (function () {
+      const card = getCard('5');
+      const log = document.getElementById('verify-5');
+      let count = 0;
+      card.addEventListener('change', () => {
+        count++;
+        const ts = new Date().toISOString().slice(11, 23);
+        const radio = card.querySelector('input[type="radio"]:checked');
+        log.textContent = `[${ts}] change #${count}: value="${radio ? radio.value : '?'}"\n` + log.textContent;
+        log.scrollTop = 0;
+      });
+    })();
+
+    // --- Reset all ---
+    document.getElementById('resetAll').addEventListener('click', () => {
+      document.querySelectorAll('input[type="radio"]').forEach(r => { r.checked = false; });
+      document.querySelectorAll('[data-testid="card"]').forEach(c => syncCardUI(c));
+      document.querySelectorAll('.verify').forEach(v => {
+        v.textContent = 'Reset. Press a number key to verify.';
+        v.classList.remove('pass', 'fail');
+      });
+    });
+  })();
+</script>
+</body>
+</html>

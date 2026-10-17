@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--
+  Quiz Keyboard Navigator — Practice Quiz
+  =======================================
+  Use this file to verify the extension works correctly before trying it on
+  a real quiz platform.
+
+  How to use:
+    1. Save this file somewhere on your computer, e.g. C:\\qkn\\practice-quiz.html
+    2. Double-click it (or drag it into Chrome) to open it.
+    3. Click the Quiz Keyboard Navigator toolbar icon → "Enable on this tab".
+    4. Follow the 8 tests below. Each test tells you what to do and what to expect.
+    5. Open DevTools (F12) → Console to see diagnostic logs prefixed with
+       "[Quiz Keyboard Navigator]".
+
+  Every test has a "Verify" panel that turns green when the expected option is
+  selected, so you don't have to guess.
+-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quiz Keyboard Navigator — Practice Quiz</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.5;
+      color: #0f172a;
+      background: #f8fafc;
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 24px 16px 80px;
+    }
+    h1 { font-size: 22px; margin: 0 0 4px; }
+    h2 { font-size: 16px; margin: 32px 0 8px; padding-bottom: 4px; border-bottom: 1px solid #e2e8f0; }
+    .intro { color: #475569; margin: 0 0 16px; font-size: 14px; }
+    .test {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 16px;
+      margin: 12px 0;
+    }
+    .test h3 { margin: 0 0 4px; font-size: 14px; color: #0f172a; }
+    .test .desc { font-size: 12.5px; color: #64748b; margin: 0 0 12px; }
+    .test .step { font-size: 13px; color: #334155; margin: 8px 0; }
+    .test .step code { background: #f1f5f9; padding: 1px 5px; border-radius: 4px; font-family: ui-monospace, monospace; font-size: 12px; }
+    fieldset { margin: 0; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; }
+    legend { font-weight: 700; padding: 0 6px; }
+    label { display: block; margin: 6px 0; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 6px; cursor: pointer; font-size: 14px; }
+    label:hover { background: #f8fafc; }
+    /* Test 2: hidden radio with visible label (the modern pattern) */
+    label.hidden-radio input[type="radio"] {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+      pointer-events: none;
+    }
+    label.hidden-radio input[type="radio"]:checked + span { font-weight: 700; color: #1d4ed8; }
+    label.hidden-radio:has(input:checked) { background: #dbeafe; border-color: #2563eb; }
+    /* Test 3: ARIA radios */
+    .aria-radio {
+      display: block; margin: 6px 0; padding: 8px 10px;
+      border: 1px solid #e2e8f0; border-radius: 6px; cursor: pointer;
+      background: #fff; font-size: 14px;
+    }
+    .aria-radio[aria-checked="true"] { background: #dbeafe; border-color: #2563eb; font-weight: 700; }
+    .aria-radio:focus { outline: 2px solid #2563eb; outline-offset: 2px; }
+    /* Test 5: disabled */
+    label.is-disabled { opacity: 0.5; cursor: not-allowed; }
+    /* Verification panel */
+    .verify {
+      margin-top: 12px; padding: 8px 10px; border-radius: 6px;
+      background: #f1f5f9; color: #475569; font-size: 12.5px;
+      border-left: 3px solid #94a3b8;
+    }
+    .verify.pass { background: #dcfce7; color: #166534; border-left-color: #16a34a; }
+    .verify.fail { background: #fee2e2; color: #991b1b; border-left-color: #dc2626; }
+    /* Buttons */
+    button.action {
+      font: inherit; font-size: 13px; padding: 6px 12px;
+      background: #2563eb; color: #fff; border: 0; border-radius: 6px; cursor: pointer;
+    }
+    button.action:hover { background: #1d4ed8; }
+    input[type="text"] { padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; width: 100%; }
+    .dynamic-host { min-height: 80px; border: 1px dashed #94a3b8; border-radius: 8px; padding: 12px; margin-top: 8px; }
+    .log { background: #0f172a; color: #e2e8f0; padding: 10px; border-radius: 6px; font-family: ui-monospace, monospace; font-size: 11.5px; max-height: 160px; overflow: auto; }
+  </style>
+</head>
+<body>
+  <h1>Quiz Keyboard Navigator — Practice Quiz</h1>
+  <p class="intro">
+    Open this file in Chrome, click the extension toolbar icon → <strong>Enable on this tab</strong>,
+    then walk through Tests 1–8 below. Open DevTools (F12) → Console to see the
+    diagnostic logs prefixed <code>[Quiz Keyboard Navigator]</code>.
+  </p>
+
+  <!-- =========================================================================
+       TEST 1: Standard visible radio inputs
+       ========================================================================= -->
+  <h2>Test 1 — Standard visible radios</h2>
+  <div class="test">
+    <p class="desc">The simplest case. Press <code>2</code> to select the second option.</p>
+    <fieldset id="t1">
+      <legend>Q1. What is 5 × 4?</legend>
+      <label><input type="radio" name="t1" value="15"> 15</label>
+      <label><input type="radio" name="t1" value="20"> 20</label>
+      <label><input type="radio" name="t1" value="25"> 25</label>
+      <label><input type="radio" name="t1" value="30"> 30</label>
+    </fieldset>
+    <div class="verify" id="t1-verify">Press a number key to verify.</div>
+  </div>
+
+  <!-- =========================================================================
+       TEST 2: Hidden radio inputs with visible labels (modern styled forms)
+       This is the pattern that broke the v1.0.0 extension.
+       ========================================================================= -->
+  <h2>Test 2 — Hidden radios + visible labels (modern pattern)</h2>
+  <div class="test">
+    <p class="desc">The actual radio is <code>opacity:0</code>; the visible UI is the <code>&lt;label&gt;</code>. Press <code>3</code>.</p>
+    <fieldset id="t2">
+      <legend>Q2. Capital of France?</legend>
+      <label class="hidden-radio"><input type="radio" name="t2" value="lyon"> <span>Lyon</span></label>
+      <label class="hidden-radio"><input type="radio" name="t2" value="paris"> <span>Paris</span></label>
+      <label class="hidden-radio"><input type="radio" name="t2" value="nice"> <span>Nice</span></label>
+      <label class="hidden-radio"><input type="radio" name="t2" value="marseille"> <span>Marseille</span></label>
+    </fieldset>
+    <div class="verify" id="t2-verify">Press a number key to verify.</div>
+  </div>
+
+  <!-- =========================================================================
+       TEST 3: Accessible custom radios (role="radio")
+       No real input element; framework manages aria-checked.
+       ========================================================================= -->
+  <h2>Test 3 — Accessible custom radios (ARIA)</h2>
+  <div class="test">
+    <p class="desc">No <code>&lt;input&gt;</code>; just <code>role="radio"</code> divs. Press <code>1</code>.</p>
+    <fieldset id="t3" role="group" aria-labelledby="t3-label">
+      <div id="t3-label" style="font-weight:700; padding: 0 6px;">Q3. Largest planet?</div>
+      <div class="aria-radio" role="radio" tabindex="0" aria-checked="false" data-value="earth">Earth</div>
+      <div class="aria-radio" role="radio" tabindex="0" aria-checked="false" data-value="jupiter">Jupiter</div>
+      <div class="aria-radio" role="radio" tabindex="0" aria-checked="false" data-value="mars">Mars</div>
+      <div class="aria-radio" role="radio" tabindex="0" aria-checked="false" data-value="venus">Venus</div>
+    </fieldset>
+    <div class="verify" id="t3-verify">Press a number key to verify.</div>
+  </div>
+
+  <!-- =========================================================================
+       TEST 4: Nested option markup (label > radio + span, label inside div)
+       Tests dedup — make sure the wrapper isn't double-counted.
+       ========================================================================= -->
+  <h2>Test 4 — Nested option markup (dedup test)</h2>
+  <div class="test">
+    <p class="desc">Outer <code>&lt;div&gt;</code> wraps each <code>&lt;label&gt;</code>. Should count 4 options, not 8. Press <code>4</code>.</p>
+    <fieldset id="t4">
+      <legend>Q4. Primary color of sunlight?</legend>
+      <div class="option-wrapper">
+        <label><input type="radio" name="t4" value="red"> <span>Red</span></label>
+      </div>
+      <div class="option-wrapper">
+        <label><input type="radio" name="t4" value="green"> <span>Green</span></label>
+      </div>
+      <div class="option-wrapper">
+        <label><input type="radio" name="t4" value="blue"> <span>Blue</span></label>
+      </div>
+      <div class="option-wrapper">
+        <label><input type="radio" name="t4" value="yellow"> <span>Yellow</span></label>
+      </div>
+    </fieldset>
+    <div class="verify" id="t4-verify">Press a number key to verify.</div>
+  </div>
+
+  <!-- =========================================================================
+       TEST 5: Disabled options are skipped
+       ========================================================================= -->
+  <h2>Test 5 — Disabled option is skipped</h2>
+  <div class="test">
+    <p class="desc">Option 2 is <code>disabled</code>. Pressing <code>2</code> should do nothing (or the extension should report "not interactive"). Press <code>3</code> to select the third ENABLED option.</p>
+    <fieldset id="t5">
+      <legend>Q5. Which is a prime number?</legend>
+      <label><input type="radio" name="t5" value="9"> 9</label>
+      <label class="is-disabled"><input type="radio" name="t5" value="10" disabled> 10 (disabled)</label>
+      <label><input type="radio" name="t5" value="11"> 11</label>
+      <label><input type="radio" name="t5" value="12"> 12</label>
+    </fieldset>
+    <div class="verify" id="t5-verify">Press a number key to verify.</div>
+  </div>
+
+  <!-- =========================================================================
+       TEST 6: Text-input keyboard protection
+       ========================================================================= -->
+  <h2>Test 6 — Typing in a text field doesn't trigger shortcuts</h2>
+  <div class="test">
+    <p class="desc">Click into the text field below and type <code>1234</code>. The text field should fill with "1234" and NO quiz option should be selected.</p>
+    <fieldset id="t6" style="margin-top:8px;">
+      <legend>Q6. (Filler question — should NOT be affected while typing above.)</legend>
+      <label><input type="radio" name="t6" value="a"> A</label>
+      <label><input type="radio" name="t6" value="b"> B</label>
+      <label><input type="radio" name="t6" value="c"> C</label>
+      <label><input type="radio" name="t6" value="d"> D</label>
+    </fieldset>
+    <label for="t6-text" style="display:block; margin-top:12px; font-weight:600;">Type here:</label>
+    <input type="text" id="t6-text" placeholder="Type 1234 here — shortcuts must NOT fire while focused here" autocomplete="off">
+    <div class="verify" id="t6-verify" style="margin-top:12px;">Click into the field, type 1234, then click elsewhere.</div>
+  </div>
+
+  <!-- =========================================================================
+       TEST 7: Dynamically rendered question (SPA pattern)
+       ========================================================================= -->
+  <h2>Test 7 — Dynamically rendered question</h2>
+  <div class="test">
+    <p class="desc">Click <strong>Render question</strong> to inject a new question AFTER page load. Then press <code>2</code> — it should select the second option of the new question.</p>
+    <button class="action" id="t7-render" type="button">Render question</button>
+    <div class="dynamic-host" id="t7-host">Question will appear here.</div>
+    <div class="verify" id="t7-verify" style="margin-top:12px;">Click the button, then press a number key.</div>
+  </div>
+
+  <!-- =========================================================================
+       TEST 8: Enable/Disable + duplicate-injection handling
+       ========================================================================= -->
+  <h2>Test 8 — Enable / Disable / duplicate-injection</h2>
+  <div class="test">
+    <p class="desc">Verifies that clicking Enable twice doesn't register duplicate listeners (each keypress selects only once), and that Disable truly stops shortcuts.</p>
+    <fieldset id="t8">
+      <legend>Q8. Disable should stop shortcuts.</legend>
+      <label><input type="radio" name="t8" value="a"> A</label>
+      <label><input type="radio" name="t8" value="b"> B</label>
+      <label><input type="radio" name="t8" value="c"> C</label>
+      <label><input type="radio" name="t8" value="d"> D</label>
+    </fieldset>
+    <div class="log" id="t8-log">(log will appear here)</div>
+    <p class="step" style="margin-top:10px;">
+      Steps:<br>
+      1. Open the extension popup → click <strong>Enable</strong> (do NOT close popup yet).<br>
+      2. Click <strong>Enable</strong> again.<br>
+      3. Close popup. Press <code>1</code>. The log should show exactly ONE selection.<br>
+      4. Open popup → click <strong>Disable</strong>. Press <code>1</code>. Nothing should happen.<br>
+      5. Open popup → click <strong>Enable</strong>. Press <code>2</code>. Exactly ONE selection.
+    </p>
+    <div class="verify" id="t8-verify">Follow the steps above.</div>
+  </div>
+
+  <!-- =========================================================================
+     Local verification script — listens for radio changes on each test
+     and updates the verify panel. NOT part of the extension.
+     ========================================================================= -->
+  <script>
+    (function () {
+      function setVerify(id, pass, msg) {
+        const el = document.getElementById(id);
+        el.textContent = msg;
+        el.classList.toggle('pass', pass === true);
+        el.classList.toggle('fail', pass === false);
+      }
+
+      // Tests 1, 2, 4, 5, 8: real radios.
+      function watchRadios(testId, expectedValueByKey) {
+        const fieldset = document.getElementById(testId);
+        fieldset.addEventListener('change', (e) => {
+          const t = e.target;
+          if (t.type !== 'radio') return;
+          const expected = expectedValueByKey[t.value];
+          if (expected) {
+            setVerify(testId + '-verify', true, 'PASS: selected "' + t.value + '" — ' + expected);
+          } else {
+            setVerify(testId + '-verify', false, 'Selected "' + t.value + '" (verify it was intentional).');
+          }
+        });
+      }
+      watchRadios('t1', { '15': '15×4=60 is wrong', '20': '5×4=20 is correct', '25': 'no', '30': 'no' });
+      watchRadios('t2', { 'lyon': 'wrong', 'paris': 'Paris is correct', 'nice': 'wrong', 'marseille': 'wrong' });
+      watchRadios('t4', { 'red': 'partially right', 'green': 'no', 'blue': 'no', 'yellow': 'sunlight is yellowish-white' });
+      watchRadios('t5', { '9': '9=3×3 not prime', '10': 'disabled — should be skipped', '11': '11 is prime', '12': '12 is not prime' });
+      watchRadios('t8', {});
+
+      // Test 3: ARIA radios — listen for clicks and aria-checked changes.
+      (function () {
+        const fieldset = document.getElementById('t3');
+        const opts = fieldset.querySelectorAll('.aria-radio');
+        function sync() {
+          opts.forEach(o => {
+            if (o.getAttribute('aria-checked') === 'true') {
+              const val = o.getAttribute('data-value');
+              const ok = val === 'jupiter';
+              setVerify('t3-verify', ok, (ok ? 'PASS: ' : 'TRY: ') + 'selected "' + val + '"' + (ok ? ' — Jupiter is the largest' : ''));
+            }
+          });
+        }
+        fieldset.addEventListener('click', sync);
+        // MutationObserver catches aria-checked changes made by the extension.
+        new MutationObserver(sync).observe(fieldset, { attributes: true, attributeFilter: ['aria-checked'], subtree: true });
+      })();
+
+      // Test 6: typing protection.
+      (function () {
+        const input = document.getElementById('t6-text');
+        const fieldset = document.getElementById('t6');
+        const radios = fieldset.querySelectorAll('input[type="radio"]');
+        let hadChange = false;
+        radios.forEach(r => r.addEventListener('change', () => { hadChange = true; }));
+        input.addEventListener('input', () => {
+          // Defer check until after this event cycle.
+          setTimeout(() => {
+            if (document.activeElement === input && hadChange) {
+              setVerify('t6-verify', false, 'FAIL: a radio changed while typing in the text field.');
+              hadChange = false;
+            } else if (input.value === '1234' && !hadChange) {
+              setVerify('t6-verify', true, 'PASS: typed "1234" with no radio change.');
+            }
+          }, 0);
+        });
+      })();
+
+      // Test 7: dynamic question injection.
+      (function () {
+        const host = document.getElementById('t7-host');
+        const btn = document.getElementById('t7-render');
+        let rendered = false;
+        btn.addEventListener('click', () => {
+          if (rendered) return;
+          rendered = true;
+          host.innerHTML = `
+            <fieldset id="t7">
+              <legend>Q7. (Dynamically rendered) Smallest prime?</legend>
+              <label><input type="radio" name="t7" value="0"> 0</label>
+              <label><input type="radio" name="t7" value="1"> 1</label>
+              <label><input type="radio" name="t7" value="2"> 2</label>
+              <label><input type="radio" name="t7" value="3"> 3</label>
+            </fieldset>
+          `;
+          document.getElementById('t7').addEventListener('change', (e) => {
+            const ok = e.target.value === '2';
+            setVerify('t7-verify', ok, (ok ? 'PASS: ' : 'TRY: ') + 'selected "' + e.target.value + '"' + (ok ? ' — 2 is the smallest prime' : ''));
+          });
+          setVerify('t7-verify', null, 'Question rendered. Now press 2.');
+        });
+      })();
+
+      // Test 8: log change events so the user can count selections per keypress.
+      (function () {
+        const log = document.getElementById('t8-log');
+        let count = 0;
+        document.getElementById('t8').addEventListener('change', (e) => {
+          count++;
+          const ts = new Date().toISOString().slice(11, 23);
+          log.textContent = `[${ts}] change #${count}: value="${e.target.value}"\n` + log.textContent;
+        });
+      })();
+    })();
+  </script>
+</body>
+</html>

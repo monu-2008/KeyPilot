@@ -1,0 +1,821 @@
+/**
+ * KeyPilot by AQERIONX — content script (Manifest V3, v2.0.0)
+ *
+ * WHAT THIS FILE DOES
+ *   Listens for keys 1-4 and selects the matching answer option on the
+ *   currently visible quiz question. It supports:
+ *     - visible <input type="radio">
+ *     - hidden <input type="radio"> paired with a visible <label> (the most
+ *       common pattern in modern styled forms — including the portal's
+ *       label.radioButtonLabel + BaseRadioButtonWrapper pattern)
+ *     - accessible custom radios ([role="radio"], [role="checkbox"])
+ *     - common custom option classes ([data-option], .quiz-option, …)
+ *     - portal-specific testid-based containers ([data-testid="card"],
+ *       [data-testid="radioGroupOptions"])
+ *
+ *   Optionally listens for Enter OR Space to click the Submit button — but ONLY
+ *   when the user has enabled "Enter / Space to submit" in the popup Settings AND
+ *   the page itself opts in via <html data-keypilot-practice="true">. This
+ *   two-key gate ensures submit-by-keyboard NEVER fires on a live graded or
+ *   monitored assessment, even if the user accidentally leaves the setting on.
+ *   Additionally: never activates Next as a side effect, never clicks disabled
+ *   buttons, requires an answer to be selected (when options exist), and debounces
+ *   Enter+Space so both can't fire for the same question.
+ *
+ * PORTAL-SPECIFIC SELECTORS (reported DOM)
+ *   Based on the supplied DOM inspection report:
+ *     - [data-testid="card"]              → quiz card (question container)
+ *     - div[data-testid="radioGroupOptions"] → answer container
+ *     - label.radioButtonLabel             → visible label for each option
+ *     - [class*="BaseRadioButtonWrapper"]  → styled-components wrapper
+ *   These are treated as REPORTED FINDINGS, not guaranteed permanent.
+ *   Stable attributes (data-testid) are preferred; partial class matches
+ *   ([class*="…"]) handle styled-components hash suffixes that change
+ *   between builds.
+ *
+ * WHAT IT DOES NOT DO
+ *   - Auto-submit on live graded or monitored quizzes (Enter-to-submit is
+ *     hard-gated to practice pages).
+ *   - Touch timers, attempts, sessions, or proctoring.
+ *   - Read or upload answer content.
+ *   - Hide itself or spoof user activity.
+ *   - Bypass automation detection or termination controls.
+ *
+ * DEBUGGING
+ *   This script runs in an ISOLATED WORLD (MV3 content-script isolation).
+ *   `window.__quizKeyboardNav` is NOT visible from the page's default
+ *   DevTools console. To inspect it, open DevTools → Console → click the
+ *   "top" dropdown (top-left of the Console panel) → choose
+ *   "KeyPilot" context. See README.md for step-by-step guidance.
+ */
+
+(() => {
+  'use strict';
+
+  // =========================================================================
+  // 1. Duplicate-injection guard
+  //    On re-Enable, popup.js may call executeScript again. Without this
+  //    guard, every re-injection would register a second keydown listener
+  //    and each keypress would select twice.
+  // =========================================================================
+  if (window.__quizKeyboardNavInstalled) {
+    // Already running. Just re-enable in case we were disabled.
+    if (window.__quizKeyboardNav) {
+      window.__quizKeyboardNav.setEnabled(true);
+    }
+    return;
+  }
+  window.__quizKeyboardNavInstalled = true;
+
+  // =========================================================================
+  // 2. State + constants
+  // =========================================================================
+  const TAG = '[KeyPilot]';
+  const VERSION = '2.1.0';
+
+  let enabled = true;
+  let practiceSubmit = false;     // Enter-to-submit: ONLY honored on pages marked as practice
+  let indicatorEl = null;
+  let indicatorTimer = null;
+  let lastSelectedKey = null;        // debounces identical repeat keydown
+  let lastSelectedAt = 0;
+
+  // Question containers — most specific first. `form` is last-resort only,
+  // because a quiz page often has one huge <form> wrapping everything.
+  //
+  // Portal-specific (v1.2.0): [data-testid="card"] and
+  // div[data-testid="radioGroupOptions"] are added at the top because
+  // data-testid attributes are stable across builds. The radioGroupOptions
+  // container is smaller and more precise, so the size-based filter in
+  // getCurrentlyVisibleQuestion will prefer it over the card when both exist.
+  const QUESTION_SELECTORS = [
+    '[data-testid="radioGroupOptions"]',
+    '[data-testid="card"]',
+    'fieldset',
+    '[role="group"]',
+    '[data-question]',
+    '[data-question-id]',
+    '.question',
+    '.quiz-question',
+    'form'
+  ].join(', ');
+
+  // Custom (non-radio) option patterns. Used only when no real radios found.
+  const CUSTOM_OPTION_SELECTORS = [
+    '[role="radio"]',
+    '[role="checkbox"]',
+    '[data-option]',
+    '[data-option-index]',
+    '[data-index]',
+    '.quiz-option',
+    '.answer-option',
+    '.option',
+    '.choice'
+  ].join(', ');
+
+  // Classes that mark the visible wrapper of a hidden radio.
+  // Portal-specific (v1.2.0): label.radioButtonLabel and
+  // [class*="BaseRadioButtonWrapper"] handle the reported portal DOM.
+  // The [class*=] partial match covers styled-components hash suffixes
+  // (e.g. BaseRadioButtonWrapper-bjpxEr) that change between builds.
+  const VISIBLE_WRAPPER_SELECTORS = [
+    'label',
+    'label.radioButtonLabel',
+    '[class*="BaseRadioButtonWrapper"]',
+    '[data-option]',
+    '[data-option-index]',
+    '.quiz-option',
+    '.answer-option',
+    '.option',
+    '.choice'
+  ].join(', ');
+
+  const INDICATOR_ID = '__quiz_kb_nav_indicator__';
+  const INDICATOR_TTL_MS = 1800;
+
+  // =========================================================================
+  // 3. Logging — every diagnostic goes through here so it's easy to grep
+  //    page console output for "[Quiz Keyboard Navigator]".
+  // =========================================================================
+  function log(...args)  { console.log(TAG, ...args); }
+  function warn(...args) { console.warn(TAG, ...args); }
+  function err(...args)  { console.error(TAG, ...args); }
+
+  // =========================================================================
+  // 4. DOM helpers
+  // =========================================================================
+
+  /** Is the user currently typing in a text field, textarea, or contenteditable? */
+  function isTypingTarget(el) {
+    if (!el) return false;
+    const tag = el.tagName ? el.tagName.toLowerCase() : '';
+    if (tag === 'textarea') return true;
+    if (el.isContentEditable) return true;
+    if (tag === 'input') {
+      const type = (el.type || 'text').toLowerCase();
+      // Radio/checkbox/submit/button inputs are NOT typing targets.
+      const nonTextTypes = new Set([
+        'radio', 'checkbox', 'submit', 'button', 'image',
+        'reset', 'file', 'hidden', 'range', 'color'
+      ]);
+      return !nonTextTypes.has(type);
+    }
+    return false;
+  }
+
+  /** Is this element visually rendered (non-zero size, not display:none)? */
+  function isVisible(el) {
+    if (!el || !el.getBoundingClientRect) return false;
+    const rect = el.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return false;
+    const style = window.getComputedStyle(el);
+    if (style.display === 'none' || style.visibility === 'hidden') return false;
+    if (parseFloat(style.opacity) === 0) return false;
+    return true;
+  }
+
+  /**
+   * Given a hidden radio input, find its visible clickable wrapper.
+   * Tries, in order:
+   *   1. ancestor <label>
+   *   2. <label for="<radio.id>"> inside the question container
+   *   3. element referenced by aria-labelledby
+   *   4. ancestor matching one of VISIBLE_WRAPPER_SELECTORS
+   *   5. the radio itself (last resort)
+   */
+  function findVisibleWrapperForRadio(radio, questionEl) {
+    // 1. ancestor <label>
+    const ancestorLabel = radio.closest('label');
+    if (ancestorLabel && isVisible(ancestorLabel)) return ancestorLabel;
+
+    // 2. <label for="radioId">
+    if (radio.id) {
+      try {
+        const byFor = questionEl.querySelector(`label[for="${CSS.escape(radio.id)}"]`);
+        if (byFor && isVisible(byFor)) return byFor;
+      } catch (_) { /* CSS.escape shouldn't throw on a real id, but be safe */ }
+    }
+
+    // 3. aria-labelledby
+    const labelledBy = radio.getAttribute('aria-labelledby');
+    if (labelledBy) {
+      const ids = labelledBy.trim().split(/\s+/);
+      for (const id of ids) {
+        const ref = document.getElementById(id);
+        if (ref && isVisible(ref)) return ref;
+      }
+    }
+
+    // 4. ancestor custom-option wrapper
+    const wrapper = radio.closest(VISIBLE_WRAPPER_SELECTORS);
+    if (wrapper && isVisible(wrapper)) return wrapper;
+
+    // 5. fallback to the radio itself
+    return radio;
+  }
+
+  // =========================================================================
+  // 5. Option discovery
+  //    Returns an array of normalized "option" objects:
+  //      {
+  //        kind:      'radio' | 'custom',
+  //        radio:     HTMLInputElement | null,
+  //        target:    HTMLElement,            // visible element for indicator + click
+  //        isInteractive: () => boolean,
+  //        isSelected:    () => boolean,
+  //        describe:     () => string
+  //      }
+  //    Selecting is centralized in selectOption() so verification is uniform.
+  // =========================================================================
+
+  function buildRadioOption(radio, questionEl) {
+    const target = findVisibleWrapperForRadio(radio, questionEl);
+    return {
+      kind: 'radio',
+      radio,
+      target,
+      // For radios we do NOT check visibility — hidden radios paired with
+      // visible labels are the standard pattern. We only reject disabled
+      // or aria-disabled radios.
+      isInteractive: () => {
+        if (radio.disabled) return false;
+        if (radio.getAttribute('aria-disabled') === 'true') return false;
+        return true;
+      },
+      isSelected: () => radio.checked,
+      describe: () => {
+        const label = target === radio ? 'radio' : target.tagName.toLowerCase();
+        const cls = target.className && typeof target.className === 'string'
+          ? target.className.split(' ').slice(0, 2).join('.')
+          : '';
+        return `<input type=radio name="${radio.name || ''}" value="${radio.value || ''}"> via <${label}${cls ? ' class="' + cls + '"' : ''}>`;
+      }
+    };
+  }
+
+  function buildCustomOption(el) {
+    const role = el.getAttribute('role');
+    return {
+      kind: 'custom',
+      radio: null,
+      target: el,
+      isInteractive: () => {
+        if (el.disabled) return false;
+        if (el.getAttribute('aria-disabled') === 'true') return false;
+        return isVisible(el);
+      },
+      isSelected: () => {
+        if (role === 'radio' || role === 'checkbox') {
+          return el.getAttribute('aria-checked') === 'true';
+        }
+        if (el.getAttribute('data-selected') === 'true') return true;
+        if (el.classList.contains('selected')) return true;
+        return false;
+      },
+      describe: () => {
+        const text = (el.textContent || '').trim().slice(0, 30);
+        return `<${el.tagName.toLowerCase()} role="${role || ''}"> "${text}"`;
+      }
+    };
+  }
+
+  /**
+   * Find all answer options inside a question container.
+   * Strategy (first non-empty wins):
+   *   1. Real <input type="radio"> (including hidden ones paired with a visible label)
+   *   2. Custom [role="radio"], [role="checkbox"], .quiz-option, etc.
+   *
+   * Dedup: if a wrapper contains a radio, the wrapper is NOT also returned
+   * as a custom option (we'd otherwise double-count the same option).
+   */
+  function getOptionsForQuestion(questionEl) {
+    if (!questionEl) return [];
+
+    // 1) Real radios — include hidden ones (modern styled forms hide them
+    //    and put the visible UI on a sibling <label>).
+    const radios = Array.from(questionEl.querySelectorAll('input[type="radio"]'));
+    if (radios.length > 0) {
+      return radios.map(r => buildRadioOption(r, questionEl));
+    }
+
+    // 2) Custom option patterns. Filter out elements that contain a radio
+    //    (they're already represented by the radio path above when radios
+    //    exist; here we're in the no-radio branch so this is just hygiene).
+    const custom = Array.from(questionEl.querySelectorAll(CUSTOM_OPTION_SELECTORS));
+    const deduped = custom.filter(el => {
+      // Skip elements that contain another matched option (nested).
+      const containsNested = custom.some(other => other !== el && el.contains(other));
+      if (containsNested) return false;
+      // Skip elements whose closest ancestor is also matched (we want the outermost).
+      const ancestorMatched = custom.some(other => other !== el && other.contains(el) && !custom.some(o3 => o3 !== other && o3.contains(other) && o3.contains(el)));
+      return !ancestorMatched;
+    });
+    return deduped.map(buildCustomOption);
+  }
+
+  // =========================================================================
+  // 6. Question discovery
+  //    Picks the question container whose center is closest to the viewport's
+  //    vertical center. Filters out containers that are way larger than the
+  //    viewport (likely whole-page <form> wrappers) when smaller specific
+  //    containers exist.
+  // =========================================================================
+
+  function getCurrentlyVisibleQuestion() {
+    const allCandidates = Array.from(document.querySelectorAll(QUESTION_SELECTORS));
+
+    // Restrict to candidates that have at least one option.
+    const withOptions = allCandidates.filter(c => getOptionsForQuestion(c).length > 0);
+    if (withOptions.length === 0) return null;
+
+    // Filter out oversized containers (more than 2x viewport height) IF
+    // we have smaller alternatives. This avoids picking a whole-page <form>.
+    const vh = window.innerHeight;
+    const small = withOptions.filter(c => c.getBoundingClientRect().height <= vh * 2);
+    const candidates = small.length > 0 ? small : withOptions;
+
+    const viewportCenter = vh / 2;
+    let best = candidates[0];
+    let bestDist = Infinity;
+    for (const el of candidates) {
+      const rect = el.getBoundingClientRect();
+      const center = rect.top + rect.height / 2;
+      const dist = Math.abs(center - viewportCenter);
+      if (dist < bestDist) {
+        best = el;
+        bestDist = dist;
+      }
+    }
+    return best;
+  }
+
+  // =========================================================================
+  // 7. Selection — the heart of the fix.
+  //    Uses the native HTMLInputElement.prototype.checked setter so React's
+  //    value tracker doesn't get confused. Also dispatches input+change so
+  //    React's onChange fires, AND clicks the visible target so non-React
+  //    click handlers (and the browser's default label→input activation) fire.
+  //    Verifies the post-click state and reports honestly.
+  // =========================================================================
+
+  // Cache the native setter once (React/Vue/etc. override the property on
+  // the instance, so going through the prototype bypasses their override).
+  const nativeCheckedSetter =
+    Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'checked') &&
+    Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'checked').set;
+
+  function selectOption(option) {
+    if (!option) {
+      warn('selectOption called with no option');
+      return { ok: false, verified: false, reason: 'no_option' };
+    }
+
+    if (!option.isInteractive()) {
+      warn('Option not interactive (disabled or hidden):', option.describe());
+      return { ok: false, verified: false, reason: 'not_interactive' };
+    }
+
+    const wasSelected = option.isSelected();
+
+    if (option.kind === 'radio' && option.radio) {
+      const radio = option.radio;
+
+      // 1. Native setter — bypasses React's value tracker.
+      if (nativeCheckedSetter) {
+        try { nativeCheckedSetter.call(radio, true); } catch (e) { warn('setter failed', e); }
+      } else {
+        radio.checked = true;
+      }
+
+      // 2. Dispatch input + change so React's onChange / Vue's v-model fire.
+      radio.dispatchEvent(new Event('input',  { bubbles: true }));
+      radio.dispatchEvent(new Event('change', { bubbles: true }));
+
+      // 3. Click the visible target. If target is a <label> wrapping the radio
+      //    (or pointing to it via `for`), clicking the label also activates
+      //    the radio per the HTML spec — which triggers any framework's
+      //    onClick handler. If target IS the radio, this is redundant but harmless.
+      try { option.target.click(); } catch (e) { warn('target.click failed', e); }
+
+    } else {
+      // Custom ARIA radio / checkbox / generic clickable.
+      try { option.target.click(); } catch (e) { warn('target.click failed', e); }
+      const role = option.target.getAttribute('role');
+      if (role === 'radio' || role === 'checkbox') {
+        // Best-effort ARIA state hint; framework may already set this.
+        option.target.setAttribute('aria-checked', 'true');
+      }
+    }
+
+    // Verify the resulting selection state where technically possible.
+    // For radios this is reliable (radio.checked is the source of truth).
+    // For custom widgets we check aria-checked / data-selected / .selected.
+    const nowSelected = option.isSelected();
+    showIndicator(option.target);
+
+    log(
+      `Selected ${option.describe()}`,
+      `| wasSelected=${wasSelected}`,
+      `| nowSelected=${nowSelected}`,
+      `| verified=${nowSelected}`
+    );
+
+    return {
+      ok: true,
+      verified: nowSelected,
+      reason: nowSelected
+        ? (wasSelected ? 'already_selected' : 'selected_and_verified')
+        : 'click_attempted_state_not_verified'
+    };
+  }
+
+  // =========================================================================
+  // 8. Visual indicator — positioned around the VISIBLE target (label or
+  //    wrapper), not the hidden radio. Fixes the "indicator is invisible
+  //    because the radio is opacity:0" bug.
+  // =========================================================================
+
+  function showIndicator(targetEl) {
+    if (indicatorEl) {
+      indicatorEl.remove();
+      indicatorEl = null;
+    }
+    if (indicatorTimer) {
+      clearTimeout(indicatorTimer);
+      indicatorTimer = null;
+    }
+
+    const rect = targetEl.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) {
+      // Target itself is invisible — don't bother showing a 0×0 box.
+      return;
+    }
+
+    const el = document.createElement('div');
+    el.id = INDICATOR_ID;
+    el.setAttribute('data-quiz-kb-indicator', 'true');
+    el.style.cssText = [
+      'position: fixed',
+      `left: ${rect.left - 4}px`,
+      `top: ${rect.top - 4}px`,
+      `width: ${rect.width + 8}px`,
+      `height: ${rect.height + 8}px`,
+      'border: 3px solid #2563eb',
+      'border-radius: 8px',
+      'pointer-events: none',
+      'z-index: 2147483647',
+      'box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.2)',
+      'transition: opacity 0.2s ease',
+      'opacity: 1'
+    ].join('; ');
+    document.documentElement.appendChild(el);
+    indicatorEl = el;
+
+    indicatorTimer = setTimeout(() => {
+      if (indicatorEl) {
+        indicatorEl.style.opacity = '0';
+        const toRemove = indicatorEl;
+        setTimeout(() => toRemove.remove(), 220);
+        indicatorEl = null;
+      }
+    }, INDICATOR_TTL_MS);
+  }
+
+  function hideIndicator() {
+    if (indicatorEl) { indicatorEl.remove(); indicatorEl = null; }
+    if (indicatorTimer) { clearTimeout(indicatorTimer); indicatorTimer = null; }
+  }
+
+  // =========================================================================
+  // 9. Key handler
+  // =========================================================================
+
+  /**
+   * Is the current page a "practice" page authorized for Enter/Space-to-submit?
+   *
+   * Two-key gate (both must be true):
+   *   1. The user has enabled "Enter / Space to submit" in the popup Settings.
+   *   2. The page itself opts in via `document.documentElement` having the
+   *      attribute `data-keypilot-practice="true"` (the local practice-quiz
+   *      HTML files set this).
+   *
+   * Live portal pages never set this attribute, so Enter/Space-to-submit is
+   * IMPOSSIBLE on a real graded or monitored quiz, even if the user
+   * accidentally leaves the setting on.
+   */
+  function isPracticePageAuthorized() {
+    if (!practiceSubmit) return false;
+    const attr = document.documentElement.getAttribute('data-keypilot-practice');
+    return attr === 'true';
+  }
+
+  /**
+   * Find the Submit/Next button inside the currently visible question card.
+   * Looks for common patterns: button with text Submit/Next, [type="submit"],
+   * [data-testid="submitButton"], .actionButton.
+   * Returns null if not found.
+   */
+  function findSubmitButton(questionEl) {
+    if (!questionEl) return null;
+    const candidates = Array.from(questionEl.querySelectorAll(
+      'button, [role="button"], input[type="submit"]'
+    )).filter(btn => {
+      if (btn.disabled) return false;
+      if (btn.getAttribute('aria-disabled') === 'true') return false;
+      const text = (btn.textContent || btn.value || '').trim().toLowerCase();
+      return /^(submit|next|check|verify|continue)$/.test(text) ||
+             btn.getAttribute('data-testid') === 'submitButton' ||
+             btn.classList.contains('actionButton');
+    });
+    if (candidates.length === 0) return null;
+    return candidates.find(isVisible) || candidates[0];
+  }
+
+  /**
+   * Has the user selected an answer for the current question?
+   * We require a selection before Enter/Space can submit, because some
+   * quizzes reject empty submissions and we don't want to trigger an
+   * error state. If we can't determine selection (no radios found), we
+   * still allow submit (the page may allow skipping).
+   */
+  function hasSelectedAnswer(questionEl) {
+    if (!questionEl) return false;
+    const opts = getOptionsForQuestion(questionEl);
+    if (opts.length === 0) return true; // no options — assume page allows submit
+    return opts.some(o => o.isSelected());
+  }
+
+  /**
+   * Handle Enter OR Space as a submit trigger in practice mode.
+   *
+   * Safety guards:
+   *   - Only fires on the first keydown (event.repeat is ignored).
+   *   - Prevents double-fire: if Enter just submitted within the last 800ms,
+   *     Space (or vice versa) is ignored for the same question.
+   *   - Never activates Next as a side effect: we look for the Submit button
+   *     specifically. If only a Next button is visible (no Submit), we skip
+   *     rather than click Next.
+   *   - Never clicks a disabled button.
+   *   - Requires an answer to be selected (when options exist).
+   */
+  let lastSubmitAt = 0;
+  const SUBMIT_DEBOUNCE_MS = 800;
+
+  function handleSubmitKey(event) {
+    if (!enabled) return;
+    if (isTypingTarget(event.target)) return;
+    if (event.ctrlKey || event.metaKey || event.altKey) return;
+
+    const key = event.key;
+    const isSubmitKey = (key === 'Enter' || key === ' ');
+    if (!isSubmitKey) return;
+
+    // Ignore repeated keydown from holding the key.
+    if (event.repeat) {
+      event.preventDefault();
+      return;
+    }
+
+    if (!isPracticePageAuthorized()) {
+      log(key === 'Enter' ? 'Enter' : 'Space',
+          'pressed but practice mode is not authorized on this page. ' +
+          'Enable "Enter / Space to submit" in Settings AND open a practice page ' +
+          '(marked with data-keypilot-practice="true") to use this shortcut.');
+      return;
+    }
+
+    // Debounce: prevent Enter+Space from both firing on the same question.
+    const now = Date.now();
+    if ((now - lastSubmitAt) < SUBMIT_DEBOUNCE_MS) {
+      event.preventDefault();
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const question = getCurrentlyVisibleQuestion();
+    if (!question) {
+      warn(key + ' pressed but no question container found.');
+      return;
+    }
+
+    // Require an answer to be selected (when options exist).
+    if (!hasSelectedAnswer(question)) {
+      warn(key + ' pressed but no answer is selected. Select an option (1-4) first.');
+      return;
+    }
+
+    const submitBtn = findSubmitButton(question);
+    if (!submitBtn) {
+      warn(key + ' pressed on a practice page but no Submit button found.');
+      return;
+    }
+
+    // Never activate Next as a side effect of this feature. If the only
+    // available button is labeled "Next" (not "Submit"), skip it.
+    const btnText = (submitBtn.textContent || submitBtn.value || '').trim().toLowerCase();
+    if (btnText === 'next') {
+      warn(key + ' pressed but only a Next button is visible — not activating Next ' +
+           'as a side effect of practice-mode submit.');
+      return;
+    }
+
+    lastSubmitAt = now;
+    log(key + ' pressed on practice page — clicking submit button:', submitBtn);
+    try { submitBtn.click(); } catch (e) { warn('submitBtn.click failed', e); }
+  }
+
+  function handleKeyDown(event) {
+    if (!enabled) return;
+
+    // Skip when user is typing in a text input/textarea/contenteditable.
+    if (isTypingTarget(event.target)) return;
+
+    // Skip modifier-key combinations (Ctrl/Cmd/Alt) so browser shortcuts work.
+    if (event.ctrlKey || event.metaKey || event.altKey) return;
+
+    const key = event.key;
+
+    // Enter / Space-to-submit is handled separately (practice mode only).
+    if (key === 'Enter' || key === ' ') {
+      handleSubmitKey(event);
+      return;
+    }
+
+    if (key !== '1' && key !== '2' && key !== '3' && key !== '4') return;
+
+    // Avoid repeated actions when a key is held down. The browser fires
+    // keydown repeatedly during a hold; we only act on the first one.
+    if (event.repeat) {
+      event.preventDefault();
+      return;
+    }
+
+    // Debounce: ignore identical key within 400ms (handles the case where
+    // event.repeat isn't set by some platforms).
+    const now = Date.now();
+    if (key === lastSelectedKey && (now - lastSelectedAt) < 400) {
+      event.preventDefault();
+      return;
+    }
+    lastSelectedKey = key;
+    lastSelectedAt = now;
+
+    const index = parseInt(key, 10) - 1;
+
+    const question = getCurrentlyVisibleQuestion();
+    if (!question) {
+      warn(`Key ${key} pressed but no question container found.`);
+      return;
+    }
+
+    const options = getOptionsForQuestion(question);
+    if (options.length === 0) {
+      warn(`Key ${key} pressed but no options found in question:`, question);
+      return;
+    }
+
+    log(`Key ${key} → question had ${options.length} option(s). Selecting index ${index}.`);
+
+    if (index >= options.length) {
+      warn(`Key ${key} → index ${index} out of range (only ${options.length} options).`);
+      return;
+    }
+
+    // Prevent the page from also reacting to the digit (rare, but safe).
+    event.preventDefault();
+    event.stopPropagation();
+
+    const result = selectOption(options[index]);
+
+    // Surface failures clearly in the console for debugging.
+    if (!result.verified) {
+      warn(`Selection not verified. Reason: ${result.reason}`);
+    }
+  }
+
+  // =========================================================================
+  // 10. Listener registration
+  // =========================================================================
+
+  // Capture phase so we see the event before framework-level handlers.
+  // This is fine — we only call preventDefault/stopPropagation for our 4
+  // mapped keys, and only when an actual selection happened.
+  document.addEventListener('keydown', handleKeyDown, true);
+
+  // Hide the indicator if the user scrolls or resizes (it would otherwise
+  // float in the wrong place because it's position: fixed).
+  window.addEventListener('resize', hideIndicator, { passive: true });
+  window.addEventListener('scroll', hideIndicator, { passive: true, capture: true });
+
+  // =========================================================================
+  // 11. Message API (from popup.js)
+  // =========================================================================
+
+  chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    if (!message || typeof message.type !== 'string') return;
+
+    switch (message.type) {
+      case 'ping':
+      case 'status':
+        sendResponse({ ok: true, installed: true, enabled, version: VERSION });
+        break;
+      case 'enable':
+        enabled = true;
+        log('Enabled via popup.');
+        sendResponse({ ok: true, installed: true, enabled });
+        break;
+      case 'disable':
+        enabled = false;
+        hideIndicator();
+        log('Disabled via popup.');
+        sendResponse({ ok: true, installed: true, enabled });
+        break;
+      case 'setPracticeSubmit':
+        // Updates the Enter-to-submit setting. Even when enabled=true, the
+        // content script will only honor Enter on pages that opt in via
+        // <html data-keypilot-practice="true">. See isPracticePageAuthorized().
+        practiceSubmit = !!message.enabled;
+        log('practiceSubmit set to', practiceSubmit,
+            '(page-level opt-in still required via data-keypilot-practice="true")');
+        sendResponse({ ok: true, practiceSubmit });
+        break;
+      case 'diagnose':
+        // Returns a snapshot useful when filing a bug report.
+        try {
+          const q = getCurrentlyVisibleQuestion();
+          const opts = q ? getOptionsForQuestion(q) : [];
+          const submitBtn = q ? findSubmitButton(q) : null;
+          sendResponse({
+            ok: true,
+            installed: true,
+            enabled,
+            version: VERSION,
+            url: location.href,
+            practiceSubmitSetting: practiceSubmit,
+            practicePageAuthorized: isPracticePageAuthorized(),
+            submitButtonFound: !!submitBtn,
+            question: q ? {
+              tag: q.tagName.toLowerCase(),
+              testid: q.getAttribute('data-testid'),
+              role: q.getAttribute('role'),
+              className: q.className,
+              id: q.id || null
+            } : null,
+            optionCount: opts.length,
+            options: opts.map(o => o.describe())
+          });
+        } catch (e) {
+          sendResponse({ ok: false, error: String(e) });
+        }
+        break;
+      default:
+        // Unknown message — ignore silently.
+        break;
+    }
+    return true; // keep channel open for async sendResponse
+  });
+
+  // =========================================================================
+  // 12. Debug surface
+  //    NOTE: This namespace is on the content-script isolated world's window,
+  //    NOT the page's main world. To access it from DevTools:
+  //      1. Open DevTools (F12) on the quiz page.
+  //      2. In the Console tab, click the "top" dropdown at the top-left.
+  //      3. Choose "Quiz Keyboard Navigator" from the list.
+  //      4. Now `window.__quizKeyboardNav` is available.
+  // =========================================================================
+  window.__quizKeyboardNav = {
+    version: VERSION,
+    getEnabled: () => enabled,
+    setEnabled: (v) => { enabled = !!v; },
+    getVisibleQuestion: getCurrentlyVisibleQuestion,
+    getOptions: getOptionsForQuestion,
+    selectOption,
+    diagnose: () => {
+      const q = getCurrentlyVisibleQuestion();
+      const opts = q ? getOptionsForQuestion(q) : [];
+      const submitBtn = q ? findSubmitButton(q) : null;
+      return {
+        enabled,
+        version: VERSION,
+        url: location.href,
+        practiceSubmitSetting: practiceSubmit,
+        practicePageAuthorized: isPracticePageAuthorized(),
+        submitButtonFound: !!submitBtn,
+        question: q
+          ? q.tagName.toLowerCase() +
+            (q.getAttribute('data-testid') ? '[data-testid="' + q.getAttribute('data-testid') + '"]' : '') +
+            (q.className ? '.' + String(q.className).split(' ').join('.') : '')
+          : null,
+        optionCount: opts.length,
+        options: opts.map(o => o.describe())
+      };
+    },
+    hideIndicator
+  };
+
+  log(`KeyPilot content script v${VERSION} ready. Press 1-4 to select options.`);
+  log('Tip: open DevTools → Console → switch context to "KeyPilot" to inspect window.__quizKeyboardNav');
+})();
