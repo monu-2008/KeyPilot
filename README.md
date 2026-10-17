@@ -18,6 +18,26 @@ Enter / Space-to-submit shortcut is hard-gated to local practice pages only.
 > first. If it works there but not on the real portal, the DOM has changed
 > — see "Verifying selectors on the real portal" below.
 
+
+## Repository layout
+
+This repository contains two separate parts:
+
+- **Chrome extension:** files such as `manifest.json`, `content.js`,
+  `popup.html`, `popup.css`, and `popup.js` stay at the repository root.
+- **Website:** the Next.js landing page lives in
+  [`keypilot-website/`](https://github.com/monu-2008/KeyPilot/tree/main/keypilot-website).
+
+### Deploy the website
+
+When importing this repository into Vercel, set **Root Directory** to
+`keypilot-website`, keep the framework as **Next.js**, and leave the build
+and output settings at their detected defaults. Website deployment is
+independent of loading the extension from the repository root.
+
+See the [website README](keypilot-website/README.md) for complete setup and
+deployment instructions.
+
 ---
 
 ## Table of contents
