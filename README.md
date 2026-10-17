@@ -434,9 +434,9 @@ If either condition is false, pressing Enter or Space does nothing related to Ke
 1. Open `practice-quiz-portal.html` in Chrome.
 2. Open the KeyPilot popup → **Enable on this tab**.
 3. Expand **Settings** → toggle **Enter / Space to submit** ON.
-4. Press `2` to select an option (the button changes from SUBMIT to NEXT).
-5. Press `Enter` (or `Space`). The SUBMIT/NEXT button is clicked automatically.
-6. Open DevTools Console to see `[KeyPilot] Enter pressed on practice page — clicking submit button:` (or `Space pressed…`).
+4. Press `2` to select an option; the button should become enabled and remain labelled SUBMIT.
+5. Press `Enter` (or `Space`) on this local practice page. SUBMIT should be activated and the page should change the label to NEXT.
+6. Press Enter/Space again; the extension must not activate NEXT. Open DevTools Console to inspect the result.
 
 To verify the gate works, try the same on a non-practice page (e.g. any normal website) — pressing Enter/Space should do nothing related to KeyPilot, and the console will log `Enter pressed but practice mode is not authorized on this page.`
 
@@ -839,56 +839,24 @@ and are not transmitted anywhere.
 
 ---
 
-## Publishing to GitHub
+## Updating the public GitHub repository
 
-To publish this project to GitHub and wire up the "View on GitHub" footer link:
+The project is already published here:
 
-### Step 1 — Create the repository on GitHub
+- Repository: <https://github.com/monu-2008/KeyPilot>
+- Default branch: `main`
+- Visibility: Public
 
-1. Go to <https://github.com/new>.
-2. **Repository name:** `keypilot` (or any name you prefer).
-3. **Description:** `KeyPilot by AQERIONX — Chrome MV3 extension for keyboard-based quiz navigation.`
-4. **Visibility:** Public (or Private if you prefer — the link works either way).
-5. **Initialize:** leave unchecked (you'll push an existing folder).
-6. Click **Create repository**.
+To publish local changes, open GitHub Desktop, review the changed files,
+enter a commit summary, click **Commit to main**, then click **Push origin**.
+Do not create a second repository or run `git init` in an existing clone.
 
-### Step 2 — Initialize git locally (in VS Code terminal)
+Before pushing, review the changes for API keys, passwords, cookies,
+authentication tokens, personal session data, and private portal details.
+Do not commit generated ZIP files or unnecessary build outputs.
 
-Open VS Code's integrated terminal (`Ctrl+~`) at the project folder and run:
-
-```bash
-cd /path/to/quiz-keyboard-navigator
-git init
-git add .
-git commit -m "KeyPilot by AQERIONX v2.0.0"
-git branch -M main
-git remote add origin https://github.com/YOUR_USERNAME/keypilot.git
-git push -u origin main
-```
-
-Replace `YOUR_USERNAME` with your GitHub username.
-
-### Step 3 — Add a `.gitignore`
-
-Create a `.gitignore` file with:
-
-```
-.DS_Store
-*.zip
-node_modules/
-```
-
-Commit and push it.
-
-### Step 4 — Configure the GitHub footer link
-
-Open `popup.js` and find the `GITHUB_REPOSITORY_URL` constant near the top (around line 50). Replace the empty string with your repository URL:
-
-```js
-const GITHUB_REPOSITORY_URL = 'https://github.com/YOUR_USERNAME/keypilot';
-```
-
-Reload the extension in `chrome://extensions` (click the reload arrow on the extension card). The "View on GitHub" link will now appear in the popup footer.
+The extension footer's GitHub link is configured directly in `popup.js`
+and should point to the public repository URL above.
 
 ---
 
@@ -899,7 +867,7 @@ All three external links in the Explore AQERIONX footer are controlled by consta
 ```js
 const HUSH_URL = 'https://hush.aqerionx.in/';
 const INSTAGRAM_PROFILE_URL = 'https://www.instagram.com/aqerionx/';
-const GITHUB_REPOSITORY_URL = '';  // PLACEHOLDER — set when you publish the repo
+const GITHUB_REPOSITORY_URL = 'https://github.com/monu-2008/KeyPilot';
 ```
 
 ### Hush (`HUSH_URL`)
@@ -924,28 +892,12 @@ pill is always active. Clicking it opens the URL in a new tab via
 
 ### GitHub (`GITHUB_REPOSITORY_URL`)
 
-**PLACEHOLDER until you publish the repository.** The GitHub pill appears
-disabled (greyed out, not clickable) until you set a real URL.
+The footer link is configured for the public repository:
+`https://github.com/monu-2008/KeyPilot`.
 
-To enable:
-
-1. Publish the project to GitHub (see [Publishing to GitHub](#publishing-to-github)).
-2. Open `popup.js` and find `GITHUB_REPOSITORY_URL` (around line 60).
-3. Replace the empty string with your repository URL:
-   ```js
-   const GITHUB_REPOSITORY_URL = 'https://github.com/AQERIONX/keypilot';
-   ```
-4. Reload the extension in `chrome://extensions` (click the reload arrow on the KeyPilot card).
-5. Reopen the popup — the GitHub pill is now active. Clicking it opens the repository in a new tab.
-
-**Behavior when empty:** The pill is shown but disabled, with
-`title="GitHub repository not yet published"` and `aria-disabled="true"`.
-Users see it exists but understand it's not yet available. No broken clicks.
-
-**Why `chrome.tabs.create` and not `window.open`:** MV3 extension popups
-can be blocked by Chrome's popup policy when calling `window.open` for
-cross-origin URLs. `chrome.tabs.create` is the supported API and always
-works.
+Clicking the GitHub pill opens the repository in a new tab through
+`chrome.tabs.create`. If you fork or rename the repository, update the
+constant near the top of `popup.js` and reload the extension.
 
 ---
 
@@ -1008,9 +960,8 @@ Use this checklist to verify KeyPilot works end-to-end. Open `practice-quiz-port
 
 ### GitHub footer
 
-- [ ] **G1.** With `GITHUB_REPOSITORY_URL` still empty (placeholder), open popup → "View on GitHub" link is hidden.
-- [ ] **G2.** Set `GITHUB_REPOSITORY_URL = 'https://github.com/YOUR_USERNAME/keypilot'` in `popup.js`, reload the extension → link appears in footer.
-- [ ] **G3.** Click the link → opens the repository in a new tab.
+- [ ] **G1.** Open the popup and verify the GitHub pill is enabled.
+- [ ] **G2.** Click the GitHub pill → `https://github.com/monu-2008/KeyPilot` opens in a new tab.
 
 ---
 
@@ -1036,7 +987,7 @@ This section distinguishes tests that were actually performed from tests that we
 | 12 | `prefers-reduced-motion` media query AND `html.force-reduced-motion` class are both present and collapse animations. | ✅ Pass |
 | 13 | All buttons have `:focus-visible` styles for keyboard accessibility. | ✅ Pass |
 | 14 | `practice-quiz-portal.html` has `<html lang="en" data-keypilot-practice="true">` — opts in to Enter/Space-to-submit. | ✅ Pass |
-| 15 | `GITHUB_REPOSITORY_URL` is a documented empty placeholder (`''`) with clear instructions; the GitHub pill is shown disabled when empty. | ✅ Pass |
+| 15 | `GITHUB_REPOSITORY_URL` is configured as `https://github.com/monu-2008/KeyPilot`; the GitHub pill should be enabled. | Source updated; verify in Chrome |
 | 16 | `INSTAGRAM_PROFILE_URL` is set to the official `https://www.instagram.com/aqerionx/` (no placeholder). | ✅ Pass |
 | 17 | `HUSH_URL` is set to `https://hush.aqerionx.in/` (no placeholder). | ✅ Pass |
 | 18 | The genuine Hush logo was successfully downloaded from `https://hush.aqerionx.in/icon.svg` (confirmed via `curl` + web-reader fetch). The SVG content matches the live site's favicon (lowercase "h" on a dark rounded square with violet/cyan glow). | ✅ Pass |
@@ -1071,13 +1022,12 @@ This section distinguishes tests that were actually performed from tests that we
 | O | **Reduced-motion** — animations collapse when the OS-level setting is on OR when the extension's "Reduced motion" toggle is on. | No Chrome / no OS setting. | Enable "Reduce motion" in Windows Settings → Accessibility → Visual effects; OR toggle the extension's "Reduced motion" in Settings. |
 | P | **Hush card click** — clicking the Hush card opens `https://hush.aqerionx.in/` in a new tab. | No Chrome. | Open the popup, click the Hush card, verify a new tab opens to the Hush site. |
 | Q | **Instagram pill click** — clicking opens `https://www.instagram.com/aqerionx/` in a new tab. | No Chrome. | Open the popup, click the Instagram pill, verify a new tab opens to the official AQERIONX Instagram profile. |
-| R | **GitHub pill (disabled state)** — with `GITHUB_REPOSITORY_URL` empty, the pill is greyed out and not clickable. | No Chrome. | Open the popup, verify the GitHub pill is visually disabled; try clicking — nothing should happen. |
-| S | **GitHub pill (enabled state)** — after setting a real URL, clicking opens the repository in a new tab. | No Chrome; URL is a placeholder. | Set a real URL in `popup.js`, reload the extension, click the GitHub pill. |
+| R | **GitHub pill** — opens the published repository in a new tab. | No Chrome. | Reload the extension, open the popup, and click the GitHub pill. | |
 | T | **Real portal test.** | The portal DOM was reported but not independently verified. | Test on a real practice quiz on the portal, not a graded one. |
 
 **Honest statement:** The extension has **not** been tested in a real Chrome browser in this build environment. The code passes static validation (JSON syntax, JS syntax, asset references including the genuine Hush logo, ID/message consistency, three-theme CSS variable coverage, accessibility hooks, Enter/Space-to-submit gate logic with all four safety guards, real-checks-not-hardcoded diagnostics) but the visual rendering and runtime behavior must be verified by you in Chrome per the "Tests NOT performed" table above and the [Test checklist](#test-checklist).
 
-The Hush logo was genuinely retrieved from the live site (not invented) — confirmed by downloading `https://hush.aqerionx.in/icon.svg` and verifying its content matches the site's `<link rel="icon">` and PWA manifest. The Instagram URL is the official `https://www.instagram.com/aqerionx/` per user instruction. The GitHub URL remains a documented placeholder until the repository is published.
+The Hush logo was genuinely retrieved from the live site (not invented) — confirmed by downloading `https://hush.aqerionx.in/icon.svg` and verifying its content matches the site's `<link rel="icon">` and PWA manifest. The Instagram URL is the official `https://www.instagram.com/aqerionx/` per user instruction. The GitHub footer URL is configured as `https://github.com/monu-2008/KeyPilot`.
 
 
 
