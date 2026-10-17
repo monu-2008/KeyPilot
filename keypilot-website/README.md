@@ -30,8 +30,8 @@ bun run build
 bun run start
 ```
 
-> ⚠️ Per the sandbox rules, the dev server runs on port 3000 automatically.
-> Do not run `bun run build` for the dev workflow — use `bun run dev`.
+Use `bun run dev` for development. Use `bun run build` and `bun run start`
+to verify a local production build.
 
 
 ## Deploy to Vercel
@@ -122,9 +122,9 @@ const LINKS = {
 } as const;
 ```
 
-The **Download ZIP** buttons (in the navbar and hero) point to the Google
-Drive share URL — verified publicly accessible (the file `quiz-keyboard-navigator (1).zip`
-previews without sign-in).
+The **Download ZIP** buttons (in the navbar, hero, and footer) use the direct
+Google Drive download URL. The hero also provides a fallback link to the
+original share/preview URL if the browser or Drive does not start the download.
 
 > **For the site owner:** if you ever change the Drive file, update both
 > `downloadDrive` and `downloadDirect` with the new file ID. Make sure the
