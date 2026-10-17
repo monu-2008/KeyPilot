@@ -1,4 +1,4 @@
-# KeyPilot by AQERIONX (Chrome MV3, v2.1.0)
+# KeyPilot by AQERIONX (Chrome MV3, v2.1.1)
 
 A minimal Manifest V3 Chrome extension that lets you pick quiz answer
 options with the keyboard keys `1`–`4`. It works on standard radio inputs,
@@ -22,10 +22,11 @@ Enter / Space-to-submit shortcut is hard-gated to local practice pages only.
 
 ## Table of contents
 
-1. [What changed in v2.1.0 (three themes + Explore AQERIONX footer)](#what-changed-in-v210-three-themes--explore-aqerionx-footer)
-2. [What changed in v2.0.0 (KeyPilot rebrand)](#what-changed-in-v200-keypilot-rebrand)
-3. [What changed in v1.3.0 (AQERIONX redesign)](#what-changed-in-v130-aqerionx-redesign)
-4. [What changed in v1.2.0 (portal DOM fixes)](#what-changed-in-v120-portal-dom-fixes)
+1. [What changed in v2.1.1 (published repository and practice-test fix)](#what-changed-in-v211-published-repository-and-practice-test-fix)
+2. [What changed in v2.1.0 (three themes + Explore AQERIONX footer)](#what-changed-in-v210-three-themes--explore-aqerionx-footer)
+3. [What changed in v2.0.0 (KeyPilot rebrand)](#what-changed-in-v200-keypilot-rebrand)
+4. [What changed in v1.3.0 (AQERIONX redesign)](#what-changed-in-v130-aqerionx-redesign)
+5. [What changed in v1.2.0 (portal DOM fixes)](#what-changed-in-v120-portal-dom-fixes)
 5. [Files in this project](#files-in-this-project)
 6. [Permissions — what they do and why](#permissions--what-they-do-and-why)
 7. [Installation on Windows (VS Code + Chrome)](#installation-on-windows-vs-code--chrome)
@@ -46,6 +47,18 @@ Enter / Space-to-submit shortcut is hard-gated to local practice pages only.
 22. [Compatibility limitations (honest)](#compatibility-limitations-honest)
 23. [Privacy](#privacy)
 24. [Test results (v2.1.0)](#test-results-v210)
+
+---
+
+## What changed in v2.1.1 (published repository and practice-test fix)
+
+- Configured the GitHub footer link to `https://github.com/monu-2008/KeyPilot`.
+- Corrected local practice-page behaviour: selecting an option enables SUBMIT; the button changes to NEXT only after SUBMIT is activated.
+- Fixed Submit-button discovery to check the enclosing question card when the detector returns the nested radio-options container.
+- Restricted Enter/Space-to-submit to explicitly opted-in local files or localhost practice pages. Live graded assessment submission remains manual.
+- Updated the extension version to `2.1.1`.
+
+Chrome runtime checks still need to be run locally. See the test checklist below.
 
 ---
 
@@ -811,8 +824,7 @@ What this extension deliberately does **not** do:
 - Does **not** hide itself from the page, the user, or the platform.
 - Does **not** spoof user activity, modify authentication, or manipulate
   server requests.
-- Does **not** auto-submit or click the SUBMIT/NEXT button. The Submit
-  button is always under manual user control.
+- Does **not** auto-submit on live graded or monitored assessments. Enter/Space submission is available only when enabled for an explicitly opted-in local-file or localhost practice page.
 - Does **not** read or upload answer content.
 
 If your quiz platform's terms of service restrict browser extensions or
@@ -831,7 +843,7 @@ This extension:
 - Does not attempt to evade proctoring, anti-cheat, or automation
   detection.
 - Does not hide itself from the page, the user, or the platform.
-- Does not auto-submit or repeat selections.
+- Does not auto-submit on live graded or monitored assessments; Enter/Space submission is restricted to opted-in local practice.
 - Uses the minimum permissions required for the documented behavior.
 
 All diagnostic logs are written to the browser's DevTools console only
@@ -965,9 +977,9 @@ Use this checklist to verify KeyPilot works end-to-end. Open `practice-quiz-port
 
 ---
 
-## Test results (v2.1.0)
+## Test status (v2.1.1)
 
-This section distinguishes tests that were actually performed from tests that were NOT performed, per the brief's requirement.
+This section distinguishes static source review from browser runtime tests. The v2.1.1 edits were committed to the public repository, but a real Chrome runtime was not available during this update.
 
 ### Tests performed (in this build environment)
 
