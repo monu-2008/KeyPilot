@@ -33,6 +33,42 @@ bun run start
 > ⚠️ Per the sandbox rules, the dev server runs on port 3000 automatically.
 > Do not run `bun run build` for the dev workflow — use `bun run dev`.
 
+
+## Deploy to Vercel
+
+This repository contains two related projects: the Chrome extension at the
+repository root and this Next.js website in `keypilot-website/`. Deploy only
+the website folder in Vercel; do not set the repository root as the website's
+Root Directory.
+
+1. In the Vercel dashboard, choose **Add New → Project** and import
+   `monu-2008/KeyPilot`.
+2. Open **Root Directory → Edit** and set it to
+   `keypilot-website`.
+3. Confirm the framework preset is **Next.js**.
+4. Leave **Output Directory** unset so Vercel uses Next.js defaults. The build
+   command can remain auto-detected (equivalent to `bun run build`).
+5. Deploy. No environment variables are required for the static marketing
+   page based on the current source.
+
+The project uses the standard `next build` command and does not force
+container-style `standalone` output; Vercel handles the Next.js deployment
+packaging. TypeScript build checks are enabled, so a real type error will
+fail the build rather than being silently ignored.
+
+For local production verification:
+
+```bash
+bun install
+bun run lint
+bun run build
+bun run start
+```
+
+Open `http://localhost:3000`. The development server remains available with
+`bun run dev`.
+
+
 ---
 
 ## Project structure
