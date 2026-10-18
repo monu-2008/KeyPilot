@@ -162,7 +162,7 @@ async function loadSettings() {
     settings.practiceSubmit = result[PRACTICE_SUBMIT_KEY] === true;
     settings.forceDarkMode = result[FORCE_DARK_MODE_KEY] === true;
     if (settings.forceDarkMode) {
-      const permitted = await chrome.permissions.contains({ origins: ['<all_urls>'] });
+      const permitted = await chrome.permissions.contains({ origins: ['http://*/*', 'https://*/*'] });
       if (!permitted) {
         settings.forceDarkMode = false;
         await chrome.storage.local.set({ [FORCE_DARK_MODE_KEY]: false });
@@ -239,7 +239,7 @@ FORCE_DARK_MODE.addEventListener('change', async () => {
       if (DARK_MODE_STATUS) DARK_MODE_STATUS.textContent = 'Chrome will ask to allow access to all websites…';
       // This is called directly from the user's toggle gesture; all-sites
       // access remains optional until the user confirms Chrome's prompt.
-      const granted = await chrome.permissions.request({ origins: ['<all_urls>'] });
+      const granted = await chrome.permissions.request({ origins: ['http://*/*', 'https://*/*'] });
       if (!granted) {
         settings.forceDarkMode = false;
         renderDarkModeState(false, 'Permission not granted. Dark mode remains off.');
