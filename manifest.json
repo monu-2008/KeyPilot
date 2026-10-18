@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "KeyPilot by AQERIONX",
-  "version": "2.1.2",
-  "description": "Keyboard option navigation with diagnostics; Enter/Space submission is available on local practice fixtures and the supported CCBP practice route when enabled.",
+  "version": "2.2.0",
+  "description": "Keyboard navigation plus optional Universal Dark Mode for all websites, including CCBP practice pages.",
   "permissions": [
     "activeTab",
     "scripting",
@@ -16,5 +16,11 @@
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
-  }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "optional_host_permissions": [
+    "<all_urls>"
+  ]
 }
