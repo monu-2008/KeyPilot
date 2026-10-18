@@ -4,7 +4,7 @@
  * This is a heuristic force-dark filter; a few complex sites may render imperfectly.
  */
 :root[data-keypilot-force-dark="true"] {
-  color-scheme: dark !important;
+  color-scheme: light !important;
   background-color: #111216 !important;
   filter: invert(1) hue-rotate(180deg) !important;
 }
