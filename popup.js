@@ -1,5 +1,5 @@
 /**
- * KeyPilot by AQERIONX — popup script (Manifest V3, v2.2.0)
+ * KeyPilot by AQERIONX — popup script (Manifest V3, v2.2.1)
  *
  * Responsibilities:
  *   - Three-theme management: peach (default) / midnight / lavender,
@@ -29,7 +29,7 @@
 'use strict';
 
 const TAG = '[KeyPilot]';
-const VERSION = '2.2.0';
+const VERSION = '2.2.1';
 
 // =========================================================================
 // CONFIGURATION — EXTERNAL LINKS
