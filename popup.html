@@ -41,7 +41,31 @@
       </div>
     </section>
 
-    <!-- ===================== SHORTCUTS ===================== -->
+    <!-- ===================== UNIVERSAL DARK MODE ===================== -->
+    <section class="dark-mode-card" aria-labelledby="darkModeTitle">
+      <div class="dark-mode-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20.8 14.2A8.7 8.7 0 0 1 9.8 3.2 8.9 8.9 0 1 0 20.8 14.2Z"/>
+          <path d="M16.5 3.5v4M14.5 5.5h4"/>
+        </svg>
+      </div>
+      <div class="dark-mode-copy">
+        <div class="dark-mode-title" id="darkModeTitle">
+          Universal Dark Mode
+          <span class="dark-mode-pill">ALL SITES</span>
+        </div>
+        <p class="dark-mode-desc">Automatically darken websites, including CCBP.</p>
+        <p class="dark-mode-status" id="darkModeStatus" role="status" aria-live="polite">
+          Off · turn on to apply across websites
+        </p>
+      </div>
+      <label class="switch dark-mode-switch">
+        <input type="checkbox" id="forceDarkMode" aria-label="Enable Universal Dark Mode on all websites">
+        <span class="switch-track"><span class="switch-thumb"></span></span>
+      </label>
+    </section>
+
+        <!-- ===================== SHORTCUTS ===================== -->
     <section class="section">
       <h2 class="section-title">Keyboard Shortcuts</h2>
       <div class="shortcut-grid">
