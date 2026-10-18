@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "KeyPilot by AQERIONX",
-  "version": "2.1.1",
-  "description": "Keyboard option navigation with diagnostics; Enter/Space submission is restricted to local practice pages.",
+  "version": "2.1.2",
+  "description": "Keyboard option navigation with diagnostics; Enter/Space submission is available on local practice fixtures and the supported CCBP practice route when enabled.",
   "permissions": [
     "activeTab",
     "scripting",
