@@ -1,4 +1,4 @@
-# KeyPilot by AQERIONX (Chrome MV3, v2.2.1)
+# KeyPilot by AQERIONX (Chrome MV3, v2.2.2)
 
 A minimal Manifest V3 Chrome extension that lets you pick quiz answer
 options with the keyboard keys `1`–`4`. It works on standard radio inputs,
@@ -8,7 +8,7 @@ structure reported in the inspection report
 (`[data-testid="card"]` → `[data-testid="radioGroupOptions"]` →
 `label.radioButtonLabel` → hidden `input[type="radio"]`).
 
-KeyPilot adds an opt-in **Universal Dark Mode** that applies a CCBP-focused dark palette and a reversible force-dark fallback on other websites after the user grants optional all-sites access. The existing keyboard shortcuts and practice-submit controls remain separately configurable.
+KeyPilot adds an opt-in **Adaptive Dark Mode** that darkens light neutral surfaces and adjusts dark text for readability without inverting the entire page. The existing keyboard shortcuts and practice-submit controls remain separately configurable.
 
 > ⚠️ **Compatibility notice.** The portal-specific selectors are based on
 > a **reported** DOM inspection. They have **not** been verified on the
@@ -40,6 +40,7 @@ deployment instructions.
 
 ## Table of contents
 
+1. [What changed in v2.2.2 (Adaptive Dark Mode fix)](#what-changed-in-v222-adaptive-dark-mode-fix)
 1. [What changed in v2.2.1 (Smart Dark Mode)](#what-changed-in-v221-smart-dark-mode)
 1. [What changed in v2.2.0 (Universal Dark Mode)](#what-changed-in-v220-universal-dark-mode)
 1. [What changed in v2.1.2 (CCBP practice route + diagnostics)](#what-changed-in-v212-ccbp-practice-route--diagnostics)
@@ -68,6 +69,15 @@ deployment instructions.
 23. [Compatibility limitations (honest)](#compatibility-limitations-honest)
 24. [Privacy](#privacy)
 25. [Test status (v2.1.1)](#test-status-v211)
+---
+
+## What changed in v2.2.2 (Adaptive Dark Mode fix)
+
+- Removed the full-page invert filter that could make site content hard to see.
+- Added a computed-color pass that darkens light neutral surfaces and changes dark text to a light color only when its visible surface will be darkened.
+- Keeps images, videos, canvases, and SVG artwork out of the color classifier; adds a mutation observer for dynamically rendered content.
+- This fix is syntax-checked but still needs real Chrome testing on CCBP and other websites.
+
 ---
 
 ## What changed in v2.2.1 (Smart Dark Mode)
@@ -247,7 +257,7 @@ fixes based on the DOM inspection report:
 
 ```
 quiz-keyboard-navigator/
-├── manifest.json               # MV3 manifest; activeTab + scripting + storage, optional all-sites access. v2.2.1
+├── manifest.json               # MV3 manifest; activeTab + scripting + storage, optional all-sites access. v2.2.2
 ├── background.js               # Keeps Universal Dark Mode applied across tabs and navigations
 ├── dark-mode.css               # Reversible force-dark filter for supported web pages
 ├── content.js                  # Keyboard handler (1-4), practice-submit gate, option detection, indicator
@@ -278,7 +288,7 @@ quiz-keyboard-navigator/
 **What this extension does NOT do:**
 
 - Does **not** auto-inject the keyboard shortcut `content.js` into every site. That script is loaded only on the tab where you click **Enable**.
-- Universal Dark Mode can request optional HTTP/HTTPS host access only after you turn the feature on. It selects the CCBP-specific palette for `learning.ccbp.in` and the generic fallback elsewhere; it does not collect or upload browsing data.
+- Adaptive Dark Mode can request optional HTTP/HTTPS host access only after you turn the feature on. It uses computed colors to darken light neutral surfaces and improve text contrast; it does not collect or upload browsing data.
 - Does not request `webRequest`, `cookies`, or `webNavigation`.
 - Does **not** read answer content, send network requests, modify
   authentication, spoof activity, or interact with proctoring /
@@ -1028,13 +1038,13 @@ Use this checklist to verify KeyPilot works end-to-end. Open `practice-quiz-port
 
 ---
 
-## Test status (v2.2.1)
+## Test status (v2.2.2)
 
-The v2.2.1 source changes have been committed to the public repository. The JavaScript and manifest have been syntax-checked, but **the dark-mode rendering has not yet been tested in Chrome after these commits**. Do not treat the unchecked checklist as passed.
+The v2.2.2 source changes have been committed to the public repository. JavaScript and the manifest have been syntax-checked, but **the adaptive dark-mode rendering has not yet been tested in Chrome after this change**. Do not treat the unchecked checklist as passed.
 
 ### Confirmed by source inspection
 
-- The manifest, popup diagnostics, content diagnostics and landing-page badge are set to v2.2.1.
+- The manifest, popup diagnostics, content diagnostics and landing-page badge are set to v2.2.2.
 - The GitHub footer constant points to
   `https://github.com/monu-2008/KeyPilot`.
 - Hush and Instagram links point to the configured AQERIONX destinations.
