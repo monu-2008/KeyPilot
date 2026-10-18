@@ -1,5 +1,5 @@
 /**
- * KeyPilot by AQERIONX — content script (Manifest V3, v2.1.1)
+ * KeyPilot by AQERIONX — content script (Manifest V3, v2.1.2)
  *
  * WHAT THIS FILE DOES
  *   Listens for keys 1-4 and selects the matching answer option on the
@@ -71,7 +71,7 @@
   // 2. State + constants
   // =========================================================================
   const TAG = '[KeyPilot]';
-  const VERSION = '2.1.1';
+  const VERSION = '2.1.2';
 
   let enabled = true;
   let practiceSubmit = false;     // Enter-to-submit: ONLY honored on pages marked as practice
@@ -491,29 +491,31 @@
   // =========================================================================
 
   /**
-   * Is the current page a "practice" page authorized for Enter/Space-to-submit?
+   * Is this an explicitly supported practice page for Enter/Space-to-submit?
    *
-   * Two-key gate (both must be true):
-   *   1. The user has enabled "Enter / Space to submit" in the popup Settings.
-   *   2. The page itself opts in via `document.documentElement` having the
-   *      attribute `data-keypilot-practice="true"` (the local practice-quiz
-   *      HTML files set this).
+   * The user must enable the setting. Then either:
+   *   1. A local fixture opts in with data-keypilot-practice="true", or
+   *   2. The URL matches the known CCBP practice route on its exact HTTPS host.
    *
-   * Live portal pages never set this attribute, so Enter/Space-to-submit is
-   * IMPOSSIBLE on a real graded or monitored quiz, even if the user
-   * accidentally leaves the setting on.
+   * Other portal routes and other remote origins remain unauthorized.
    */
   function isPracticePageAuthorized() {
     if (!practiceSubmit) return false;
 
-    // Practice submission is limited to a local file or localhost test page.
-    // A DOM attribute on a live portal is not enough to authorize submission.
     const localPracticeOrigin =
       location.protocol === 'file:' ||
       (location.protocol === 'http:' &&
         ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname));
-    const optIn = document.documentElement.getAttribute('data-keypilot-practice') === 'true';
-    return localPracticeOrigin && optIn;
+    const localOptIn =
+      document.documentElement.getAttribute('data-keypilot-practice') === 'true';
+
+    // CCBP's explicitly named practice route; keep the host and path narrow.
+    const ccbpPracticeRoute =
+      location.protocol === 'https:' &&
+      location.hostname === 'learning.ccbp.in' &&
+      /^\/default-question\/practice(?:\/|$)/.test(location.pathname);
+
+    return ccbpPracticeRoute || (localPracticeOrigin && localOptIn);
   }
 
   /**
@@ -601,8 +603,8 @@
     if (!isPracticePageAuthorized()) {
       log(key === 'Enter' ? 'Enter' : 'Space',
           'pressed but practice mode is not authorized on this page. ' +
-          'Enable "Enter / Space to submit" in Settings AND open a practice page ' +
-          '(marked with data-keypilot-practice="true") to use this shortcut.');
+          'Enable "Enter / Space to submit" and use an authorized local fixture or ' +
+          'the supported CCBP practice route to use this shortcut.');
       return;
     }
 
@@ -778,6 +780,8 @@
             practiceSubmitSetting: practiceSubmit,
             practicePageAuthorized: isPracticePageAuthorized(),
             submitButtonFound: !!submitBtn,
+            submitButtonText: submitBtn ? (submitBtn.textContent || submitBtn.value || '').trim() : null,
+            answerSelected: q ? hasSelectedAnswer(q) : false,
             question: q ? {
               tag: q.tagName.toLowerCase(),
               testid: q.getAttribute('data-testid'),
@@ -826,6 +830,8 @@
         practiceSubmitSetting: practiceSubmit,
         practicePageAuthorized: isPracticePageAuthorized(),
         submitButtonFound: !!submitBtn,
+        submitButtonText: submitBtn ? (submitBtn.textContent || submitBtn.value || '').trim() : null,
+        answerSelected: q ? hasSelectedAnswer(q) : false,
         question: q
           ? q.tagName.toLowerCase() +
             (q.getAttribute('data-testid') ? '[data-testid="' + q.getAttribute('data-testid') + '"]' : '') +
