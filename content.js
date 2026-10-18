@@ -13,11 +13,11 @@
  *     - portal-specific testid-based containers ([data-testid="card"],
  *       [data-testid="radioGroupOptions"])
  *
- *   Optionally listens for Enter OR Space to click the Submit button — but ONLY
- *   when the user has enabled "Enter / Space to submit" in the popup Settings AND
- *   the page itself opts in via <html data-keypilot-practice="true">. This
- *   two-key gate ensures submit-by-keyboard NEVER fires on a live graded or
- *   monitored assessment, even if the user accidentally leaves the setting on.
+ *   Optionally listens for Enter OR Space to click the Submit button — only
+ *   when the setting is enabled and the page passes the explicit practice
+ *   authorization check (local opt-in fixture or the allowlisted CCBP practice route).
+ *   Other remote origins and portal paths remain unauthorized. Use this shortcut
+ *   only for ungraded practice; never to bypass assessment or proctoring controls.
  *   Additionally: never activates Next as a side effect, never clicks disabled
  *   buttons, requires an answer to be selected (when options exist), and debounces
  *   Enter+Space so both can't fire for the same question.
@@ -530,7 +530,7 @@
     // The detector may return the radioGroupOptions element, while Submit
     // lives in its enclosing card. Search the smallest relevant question scope
     // first, then a known parent scope. This routine is used only behind the
-    // local-practice submission gate above.
+    // practice-authorization gate above.
     const scopes = [];
     const addScope = (el) => {
       if (el && !scopes.includes(el)) scopes.push(el);
