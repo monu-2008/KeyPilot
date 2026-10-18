@@ -1,0 +1,20 @@
+/*
+ * KeyPilot Universal Dark Mode
+ * Applied only while the user-enabled data-keypilot-force-dark attribute is present.
+ * This is a heuristic force-dark filter; a few complex sites may render imperfectly.
+ */
+:root[data-keypilot-force-dark="true"] {
+  color-scheme: dark !important;
+  background-color: #111216 !important;
+  filter: invert(1) hue-rotate(180deg) !important;
+}
+
+/* Counter the page-level filter for raster/media content so photos and videos
+   retain their natural colours. Cross-origin frames are darkened by the parent
+   page's filter when direct frame styling is unavailable. */
+:root[data-keypilot-force-dark="true"] img,
+:root[data-keypilot-force-dark="true"] video,
+:root[data-keypilot-force-dark="true"] canvas,
+:root[data-keypilot-force-dark="true"] input[type="image"] {
+  filter: invert(1) hue-rotate(180deg) !important;
+}
