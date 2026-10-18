@@ -261,7 +261,7 @@ quiz-keyboard-navigator/
 | Permission    | Why it's needed                                                                              |
 | ------------- | -------------------------------------------------------------------------------------------- |
 | `activeTab`   | Access the currently focused tab so we can inject the script only there.                    |
-| `scripting`   | Programmatically inject `content.js` into that one tab when you click **Enable**.           |
+| `scripting`   | Inject `content.js` on the tab where you click **Enable**, and apply/remove `dark-mode.css` on supported tabs after you opt in to Universal Dark Mode. |
 | `storage`     | Persist settings in `chrome.storage.local`, including `keypilot.forceDarkMode`. No browsing history or quiz answers are transmitted; no network sync. |
 | `optional_host_permissions: <all_urls>` | Requested only when the user turns Universal Dark Mode on. Allows the extension to darken all supported websites and future navigations. The user can deny it and keep the rest of KeyPilot. |
 
