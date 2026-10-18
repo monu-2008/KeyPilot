@@ -1,139 +1,43 @@
 /*
- * KeyPilot Smart Dark Mode (v2.2.1)
- *
- * CCBP gets a targeted dark palette instead of a whole-page inversion.
- * Other HTTP/HTTPS sites keep a reversible generic fallback. This is
- * intentionally conservative and may need per-site adjustments.
+ * KeyPilot Adaptive Dark Mode (v2.2.2)
+ * The content-side classifier marks light neutral surfaces, dark text, and light borders.
+ * It avoids whole-page inversion so images, logos, diagrams, and normal layout remain intact.
  */
 
-/* Generic fallback for websites without a dedicated profile. */
-:root[data-keypilot-force-dark="true"]:not([data-keypilot-dark-profile="ccbp"]) {
-  color-scheme: light !important;
-  background-color: #111216 !important;
-  filter: invert(1) hue-rotate(180deg) !important;
-}
-
-/* Preserve natural colours of photos and video under the generic inversion. */
-:root[data-keypilot-force-dark="true"]:not([data-keypilot-dark-profile="ccbp"]) img,
-:root[data-keypilot-force-dark="true"]:not([data-keypilot-dark-profile="ccbp"]) video,
-:root[data-keypilot-force-dark="true"]:not([data-keypilot-dark-profile="ccbp"]) canvas,
-:root[data-keypilot-force-dark="true"]:not([data-keypilot-dark-profile="ccbp"]) input[type="image"] {
-  filter: invert(1) hue-rotate(180deg) !important;
-}
-
-/* CCBP profile: dark surfaces and readable text, without inverting logos,
-   diagrams, photos, icons, button geometry, or the whole page stacking context. */
-:root[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] {
+:root[data-keypilot-force-dark="true"][data-keypilot-dark-ready="true"] {
   color-scheme: dark !important;
-  background: #101116 !important;
-  color: #e8eaf2 !important;
-  filter: none !important;
 }
 
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] body,
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] #root,
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] main,
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] [role="main"],
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] [class*="PageContainer"],
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] [class*="MainContainer"],
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] [class*="ContentContainer"],
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] [class*="PracticeContainer"] {
-  background-color: #101116 !important;
+:root[data-keypilot-force-dark="true"][data-keypilot-dark-ready="true"][data-keypilot-dark-bg="light"] {
+  background-color: #111318 !important;
   color: #e8eaf2 !important;
 }
 
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] [data-testid="card"],
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] [class*="CardContainer"],
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] [class*="GenericQuestionContainer"],
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] [class*="QuestionContainer"],
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] [class*="QuestionCard"],
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] [class*="PracticeCard"] {
-  background-color: #1a1d26 !important;
-  color: #e8eaf2 !important;
-  border-color: #353947 !important;
-  box-shadow: 0 8px 24px rgb(0 0 0 / 18%) !important;
+:root[data-keypilot-force-dark="true"][data-keypilot-dark-ready="true"] [data-keypilot-dark-bg="light"] {
+  background-color: #20232c !important;
+  background-image: none !important;
 }
 
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] [data-testid="radioGroupOptions"],
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] label.radioButtonLabel,
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] [class*="BaseRadioButtonWrapper"] {
-  background-color: #20232d !important;
-  color: #e9ebf4 !important;
-  border-color: #3a3e4d !important;
-}
-
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] [data-testid="radioGroupOptions"] label:hover,
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] label.radioButtonLabel:hover,
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] [class*="BaseRadioButtonWrapper"]:hover {
-  background-color: #292e3d !important;
-  border-color: #626a86 !important;
-}
-
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] h1,
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] h2,
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] h3,
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] h4,
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] h5,
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] h6,
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] p,
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] li,
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] label,
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] legend,
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] small,
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] [class*="Text"],
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] [class*="Label"],
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] [class*="Heading"] {
+:root[data-keypilot-force-dark="true"][data-keypilot-dark-ready="true"] [data-keypilot-dark-text="dark"] {
   color: #e8eaf2 !important;
 }
 
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] a {
-  color: #a9c7ff !important;
+:root[data-keypilot-force-dark="true"][data-keypilot-dark-ready="true"] [data-keypilot-dark-border="light"] {
+  border-color: #424755 !important;
 }
 
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] input:not([type="radio"]):not([type="checkbox"]),
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] textarea,
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] select {
+:root[data-keypilot-force-dark="true"][data-keypilot-dark-ready="true"] input,
+:root[data-keypilot-force-dark="true"][data-keypilot-dark-ready="true"] textarea,
+:root[data-keypilot-force-dark="true"][data-keypilot-dark-ready="true"] select {
   color-scheme: dark !important;
-  background-color: #1b1e28 !important;
-  color: #eceef5 !important;
-  border-color: #3b4050 !important;
 }
 
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] input[type="radio"],
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] input[type="checkbox"] {
-  accent-color: #9a8cff !important;
+:root[data-keypilot-force-dark="true"][data-keypilot-dark-ready="true"] input[type="radio"],
+:root[data-keypilot-force-dark="true"][data-keypilot-dark-ready="true"] input[type="checkbox"] {
+  accent-color: #9a8cff;
 }
 
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] button,
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] [role="button"] {
-  background-color: #292d3a !important;
-  color: #f1f2f8 !important;
-  border-color: #424758 !important;
-}
-
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] button[type="submit"],
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] [data-testid*="submit"],
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] button[class*="Submit"],
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] button[class*="submit"] {
-  background-color: #4b4592 !important;
-  color: #ffffff !important;
-  border-color: #6c64be !important;
-}
-
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] button:disabled,
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] [role="button"][aria-disabled="true"] {
-  opacity: 0.55 !important;
-}
-
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] :focus-visible {
-  outline-color: #afa5ff !important;
-}
-
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] ::selection {
+:root[data-keypilot-force-dark="true"][data-keypilot-dark-ready="true"] ::selection {
   background: #6254ba !important;
   color: #ffffff !important;
-}
-
-html[data-keypilot-force-dark="true"][data-keypilot-dark-profile="ccbp"] * {
-  scrollbar-color: #4a4f61 #161821;
 }
