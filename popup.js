@@ -1,5 +1,5 @@
 /**
- * KeyPilot by AQERIONX — popup script (Manifest V3, v2.1.2)
+ * KeyPilot by AQERIONX — popup script (Manifest V3, v2.2.0)
  *
  * Responsibilities:
  *   - Three-theme management: peach (default) / midnight / lavender,
@@ -7,7 +7,7 @@
  *     Pill selector in navbar + <select> in Settings both control the same
  *     preference and stay in sync.
  *   - Settings panel: theme select, reduced-motion, Enter/Space-to-submit
- *     (practice mode only), reset-to-defaults. All persisted.
+ *     (practice mode only), and all-sites Universal Dark Mode. All persisted.
  *   - Inject content.js into the active tab on Enable (allFrames:true).
  *   - Send enable/disable + setPracticeSubmit messages to content script.
  *   - Real-checks Diagnostics with loading/success/warn/error states and
@@ -21,13 +21,15 @@
  * Permissions used:
  *   - activeTab  → access the currently focused tab.
  *   - scripting  → inject content.js only into that tab on Enable.
- *   - storage    → persist theme, reduced-motion, practice-submit prefs.
+ *   - storage    → persist themes, shortcuts, and dark-mode preference.
+ *   - optional host access → apply Universal Dark Mode to all websites only
+ *     after the user explicitly enables the feature and grants access.
  */
 
 'use strict';
 
 const TAG = '[KeyPilot]';
-const VERSION = '2.1.2';
+const VERSION = '2.2.0';
 
 // =========================================================================
 // CONFIGURATION — EXTERNAL LINKS
@@ -56,10 +58,12 @@ const GITHUB_REPOSITORY_URL = 'https://github.com/monu-2008/KeyPilot';
 const THEME_KEY           = 'keypilot.theme';            // 'peach' | 'midnight' | 'lavender'
 const REDUCED_MOTION_KEY  = 'keypilot.reducedMotion';    // boolean
 const PRACTICE_SUBMIT_KEY = 'keypilot.practiceSubmit';   // boolean
+const FORCE_DARK_MODE_KEY = 'keypilot.forceDarkMode';    // boolean — all-sites mode
 
 const DEFAULT_THEME = 'peach';
 const DEFAULT_REDUCED_MOTION = false;
 const DEFAULT_PRACTICE_SUBMIT = false;
+const DEFAULT_FORCE_DARK_MODE = false;
 
 const VALID_THEMES = new Set(['peach', 'midnight', 'lavender']);
 
@@ -73,6 +77,9 @@ const THEME_PILLS     = Array.from(document.querySelectorAll('.theme-pill'));
 const THEME_SELECT    = document.getElementById('themeSelect');
 const REDUCED_MOTION  = document.getElementById('reducedMotion');
 const PRACTICE_SUBMIT = document.getElementById('practiceSubmit');
+const FORCE_DARK_MODE = document.getElementById('forceDarkMode');
+const DARK_MODE_CARD = document.querySelector('.dark-mode-card');
+const DARK_MODE_STATUS = document.getElementById('darkModeStatus');
 const RESET_BTN       = document.getElementById('resetBtn');
 const ENTER_HINT      = document.getElementById('enterHint');
 const ENABLE_BTN      = document.getElementById('enableBtn');
@@ -107,6 +114,7 @@ const settings = {
   theme: DEFAULT_THEME,
   reducedMotion: DEFAULT_REDUCED_MOTION,
   practiceSubmit: DEFAULT_PRACTICE_SUBMIT,
+  forceDarkMode: DEFAULT_FORCE_DARK_MODE,
 };
 
 function applyTheme(theme) {
@@ -133,15 +141,34 @@ function applyPracticeSubmit(on) {
   sendToActiveTab({ type: 'setPracticeSubmit', enabled: !!on }).catch(() => {});
 }
 
+function renderDarkModeState(enabled, message) {
+  if (FORCE_DARK_MODE) FORCE_DARK_MODE.checked = !!enabled;
+  if (DARK_MODE_CARD) DARK_MODE_CARD.dataset.enabled = enabled ? 'true' : 'false';
+  if (DARK_MODE_STATUS) {
+    DARK_MODE_STATUS.textContent = message || (enabled
+      ? 'ON · all websites, including CCBP'
+      : 'OFF · turn on to darken all websites');
+  }
+}
+
 async function loadSettings() {
   try {
     const result = await chrome.storage.local.get([
-      THEME_KEY, REDUCED_MOTION_KEY, PRACTICE_SUBMIT_KEY
+      THEME_KEY, REDUCED_MOTION_KEY, PRACTICE_SUBMIT_KEY, FORCE_DARK_MODE_KEY
     ]);
     const savedTheme = result[THEME_KEY];
     settings.theme = VALID_THEMES.has(savedTheme) ? savedTheme : DEFAULT_THEME;
     settings.reducedMotion = result[REDUCED_MOTION_KEY] === true;
     settings.practiceSubmit = result[PRACTICE_SUBMIT_KEY] === true;
+    settings.forceDarkMode = result[FORCE_DARK_MODE_KEY] === true;
+    if (settings.forceDarkMode) {
+      const permitted = await chrome.permissions.contains({ origins: ['<all_urls>'] });
+      if (!permitted) {
+        settings.forceDarkMode = false;
+        await chrome.storage.local.set({ [FORCE_DARK_MODE_KEY]: false });
+        renderDarkModeState(false, 'All-sites access was removed. Turn on again to grant it.');
+      }
+    }
   } catch (e) {
     warn('Failed to load settings, using defaults:', e);
   }
@@ -150,6 +177,14 @@ async function loadSettings() {
   applyPracticeSubmit(settings.practiceSubmit);
   if (REDUCED_MOTION)  REDUCED_MOTION.checked  = settings.reducedMotion;
   if (PRACTICE_SUBMIT) PRACTICE_SUBMIT.checked = settings.practiceSubmit;
+  if (settings.forceDarkMode) {
+    renderDarkModeState(true, 'ON · automatically applied across websites');
+  } else if (FORCE_DARK_MODE && !FORCE_DARK_MODE.checked) {
+    // Preserve a permission warning already shown above; otherwise render OFF.
+    if (!DARK_MODE_STATUS.textContent.includes('access was removed')) {
+      renderDarkModeState(false);
+    }
+  }
   log('Settings loaded:', settings);
 }
 
@@ -194,18 +229,74 @@ PRACTICE_SUBMIT.addEventListener('change', async () => {
   await saveSetting(PRACTICE_SUBMIT_KEY, on);
 });
 
+
+FORCE_DARK_MODE.addEventListener('change', async () => {
+  const enabled = FORCE_DARK_MODE.checked;
+  FORCE_DARK_MODE.disabled = true;
+
+  try {
+    if (enabled) {
+      renderDarkModeState(false, 'Chrome will ask to allow access to all websites…');
+      // This is called directly from the user's toggle gesture; all-sites
+      // access remains optional until the user confirms Chrome's prompt.
+      const granted = await chrome.permissions.request({ origins: ['<all_urls>'] });
+      if (!granted) {
+        settings.forceDarkMode = false;
+        renderDarkModeState(false, 'Permission not granted. Dark mode remains off.');
+        return;
+      }
+    }
+
+    const response = await chrome.runtime.sendMessage({
+      type: 'keypilot:setForceDarkMode',
+      enabled
+    });
+
+    if (!response || !response.ok) {
+      throw new Error(response?.message || (response?.reason === 'permission_missing'
+        ? 'Allow all-sites access in Chrome first.'
+        : 'Could not update Universal Dark Mode.'));
+    }
+
+    settings.forceDarkMode = enabled;
+    if (enabled) {
+      renderDarkModeState(true,
+        `ON · applied to ${response.appliedTabs} open tab(s); new pages included`);
+    } else {
+      renderDarkModeState(false,
+        response.skippedTabs > 0
+          ? 'OFF · if a restricted page stays dark, refresh that tab'
+          : 'OFF · dark-mode styling removed');
+    }
+    log('Universal Dark Mode changed:', { enabled, ...response });
+  } catch (error) {
+    settings.forceDarkMode = !enabled;
+    renderDarkModeState(settings.forceDarkMode,
+      error?.message || 'Could not change Universal Dark Mode.');
+    warn('Universal Dark Mode update failed:', error);
+  } finally {
+    FORCE_DARK_MODE.disabled = false;
+  }
+});
+
 RESET_BTN.addEventListener('click', async () => {
   if (!confirm('Reset all settings to defaults?')) return;
   settings.theme = DEFAULT_THEME;
   settings.reducedMotion = DEFAULT_REDUCED_MOTION;
   settings.practiceSubmit = DEFAULT_PRACTICE_SUBMIT;
+  settings.forceDarkMode = DEFAULT_FORCE_DARK_MODE;
   applyTheme(settings.theme);
   applyReducedMotion(settings.reducedMotion);
   applyPracticeSubmit(settings.practiceSubmit);
+  renderDarkModeState(false);
   if (REDUCED_MOTION)  REDUCED_MOTION.checked  = false;
   if (PRACTICE_SUBMIT) PRACTICE_SUBMIT.checked = false;
+  if (FORCE_DARK_MODE) FORCE_DARK_MODE.checked = false;
+  try {
+    await chrome.runtime.sendMessage({ type: 'keypilot:setForceDarkMode', enabled: false });
+  } catch (_) {}
   await chrome.storage.local.remove([
-    THEME_KEY, REDUCED_MOTION_KEY, PRACTICE_SUBMIT_KEY
+    THEME_KEY, REDUCED_MOTION_KEY, PRACTICE_SUBMIT_KEY, FORCE_DARK_MODE_KEY
   ]);
   log('Settings reset to defaults.');
 });
@@ -566,5 +657,10 @@ chrome.storage?.onChanged?.addListener((changes, area) => {
     settings.practiceSubmit = on;
     applyPracticeSubmit(on);
     if (PRACTICE_SUBMIT) PRACTICE_SUBMIT.checked = on;
+  }
+  if (changes[FORCE_DARK_MODE_KEY]) {
+    const on = changes[FORCE_DARK_MODE_KEY].newValue === true;
+    settings.forceDarkMode = on;
+    renderDarkModeState(on);
   }
 });
