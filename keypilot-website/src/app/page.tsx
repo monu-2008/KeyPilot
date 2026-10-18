@@ -17,7 +17,7 @@ const LINKS = {
     "https://drive.google.com/drive/folders/1VECvVBTVzq4LtEpLrxpbaGnovaTZ5v9c?usp=sharing",
 } as const;
 
-const VERSION = "v2.1.2";
+const VERSION = "v2.2.0";
 
 const NAV_LINKS = [
   { label: "Home", href: "#home" },
@@ -136,6 +136,14 @@ function IconSliders({ size = 24 }: { size?: number }) {
       <line x1="1" y1="14" x2="7" y2="14" />
       <line x1="9" y1="8" x2="15" y2="8" />
       <line x1="17" y1="16" x2="23" y2="16" />
+    </svg>
+  );
+}
+function IconMoon({ size = 24 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M20.8 14.2A8.7 8.7 0 0 1 9.8 3.2 8.9 8.9 0 1 0 20.8 14.2Z" />
+      <path d="M16.5 3.5v4M14.5 5.5h4" />
     </svg>
   );
 }
@@ -467,9 +475,9 @@ export default function Page() {
             <span className="accent">workflow</span>.
           </p>
           <p className="hero-description">
-            A smarter keyboard-navigation extension for supported quiz practice
-            pages, with premium themes, quick shortcuts and built-in
-            diagnostics.
+            A smarter browser companion with keyboard shortcuts, built-in
+            diagnostics, premium themes and optional Universal Dark Mode for
+            websites that feel too bright — including CCBP.
           </p>
           <div className="hero-ctas">
             <a
@@ -572,8 +580,8 @@ export default function Page() {
       <section className="section" id="features">
         <h2 className="section-title">Built for focus</h2>
         <p className="section-subtitle">
-          Everything you need to navigate supported quiz practice pages with
-          your keyboard — wrapped in three premium themes.
+          Keyboard shortcuts, practical diagnostics and an optional dark
+          viewing experience across the websites you use every day.
         </p>
         <div className="features-grid">
           <article className="feature-card">
@@ -581,6 +589,14 @@ export default function Page() {
             <h3 className="feature-card-title">Keyboard Shortcuts</h3>
             <p className="feature-card-body">
               Select options quickly using 1–4 on supported practice pages.
+            </p>
+          </article>
+          <article className="feature-card">
+            <div className="feature-icon-tile"><IconMoon /></div>
+            <h3 className="feature-card-title">Universal Dark Mode</h3>
+            <p className="feature-card-body">
+              Apply a reversible force-dark filter across websites, including
+              CCBP. Requires your permission for all-site access.
             </p>
           </article>
           <article className="feature-card">
@@ -714,6 +730,7 @@ export default function Page() {
           <h3 className="changelog-version">{VERSION}</h3>
           <p className="changelog-meta">Implemented in code · not yet browser-tested by the maintainer</p>
           <ul className="changelog-list">
+            <li><span className="changelog-bullet" />Universal Dark Mode for all supported web pages, including CCBP; all-sites access is requested only when you enable it.</li>
             <li><span className="changelog-bullet" />Three premium themes (Peach Clay, Midnight, Lavender Glass Clay) with persistence.</li>
             <li><span className="changelog-bullet" />Keyboard shortcuts 1–4 select the corresponding available option on supported practice pages.</li>
             <li><span className="changelog-bullet" />Built-in Diagnostics with real checks, status states, and Copy Debug Report.</li>
