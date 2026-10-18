@@ -60,7 +60,7 @@ function applySmartDarkModeInPage(enabled, profile, forceAttr, profileAttr, read
 
   function readColor(value) {
     if (!value || value === 'transparent') return null;
-    const parts = value.match(/-?\\d*\\.?\\d+/g);
+    const parts = value.match(/-?\d*\.?\d+/g);
     if (!parts || parts.length < 3) return null;
     const r = Math.max(0, Math.min(255, Number(parts[0])));
     const g = Math.max(0, Math.min(255, Number(parts[1])));
