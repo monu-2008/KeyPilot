@@ -1,4 +1,4 @@
-# KeyPilot by AQERIONX (Chrome MV3, v2.1.1)
+# KeyPilot by AQERIONX (Chrome MV3, v2.1.2)
 
 A minimal Manifest V3 Chrome extension that lets you pick quiz answer
 options with the keyboard keys `1`–`4`. It works on standard radio inputs,
@@ -8,9 +8,7 @@ structure reported in the inspection report
 (`[data-testid="card"]` → `[data-testid="radioGroupOptions"]` →
 `label.radioButtonLabel` → hidden `input[type="radio"]`).
 
-It **does not auto-submit on live graded or monitored quizzes** — the
-portal's existing Submit/Next button stays under your control. An optional
-Enter / Space-to-submit shortcut is hard-gated to local practice pages only.
+Enter / Space-to-submit requires the setting to be enabled. It is supported on the local practice fixtures and the explicit `https://learning.ccbp.in/default-question/practice/...` route. Other remote origins and portal routes remain blocked; use auto-submit only for ungraded practice.
 
 > ⚠️ **Compatibility notice.** The portal-specific selectors are based on
 > a **reported** DOM inspection. They have **not** been verified on the
@@ -42,7 +40,8 @@ deployment instructions.
 
 ## Table of contents
 
-1. [What changed in v2.1.1 (published repository and practice-test fix)](#what-changed-in-v211-published-repository-and-practice-test-fix)
+1. [What changed in v2.1.2 (CCBP practice route + diagnostics)](#what-changed-in-v212-ccbp-practice-route--diagnostics)
+2. [What changed in v2.1.1 (published repository and practice-test fix)](#what-changed-in-v211-published-repository-and-practice-test-fix)
 2. [What changed in v2.1.0 (three themes + Explore AQERIONX footer)](#what-changed-in-v210-three-themes--explore-aqerionx-footer)
 3. [What changed in v2.0.0 (KeyPilot rebrand)](#what-changed-in-v200-keypilot-rebrand)
 4. [What changed in v1.3.0 (AQERIONX redesign)](#what-changed-in-v130-aqerionx-redesign)
@@ -67,6 +66,15 @@ deployment instructions.
 23. [Compatibility limitations (honest)](#compatibility-limitations-honest)
 24. [Privacy](#privacy)
 25. [Test status (v2.1.1)](#test-status-v211)
+---
+
+## What changed in v2.1.2 (CCBP practice route + diagnostics)
+
+- Added a narrow allowlist for `https://learning.ccbp.in/default-question/practice/...`; the Enter / Space setting must still be enabled and other remote routes remain blocked.
+- Extended diagnostics to report whether an answer is selected and the detected Submit button label.
+- Updated extension, popup, and manifest version to `2.1.2`.
+- Browser end-to-end testing has not yet been run after this commit.
+
 ---
 
 ## What changed in v2.1.1 (published repository and practice-test fix)
@@ -431,19 +439,14 @@ All settings are persisted to `chrome.storage.local` and restored when the popup
 
 ## Enter / Space-to-submit (practice mode only)
 
-KeyPilot can optionally activate the visible **Submit** button with `Enter`
-or `Space`, but only in an explicitly marked local practice environment.
+KeyPilot can optionally activate the visible **Submit** button with `Enter` or `Space`.
 
-**All three conditions must be true:**
+**The setting must be enabled, and the page must be one of these supported practice environments:**
 
-1. The user enables **Enter / Space to submit** in Settings.
-2. The page contains `<html data-keypilot-practice="true">`.
-3. The page is opened as a local `file:` page or served from localhost /
-   127.0.0.1.
+1. A local fixture with `<html data-keypilot-practice="true">` opened via `file:` or localhost.
+2. The explicit HTTPS route `learning.ccbp.in/default-question/practice/...`.
 
-A page-level HTML attribute alone is not a security boundary. The extension
-also checks the page origin. Live graded/monitored quiz submission remains
-manual.
+Other remote origins and other CCBP routes remain unauthorized. The URL allowlist is not proof that a quiz is ungraded; use this shortcut only on ungraded practice.
 
 **Safety guards:**
 
@@ -839,7 +842,7 @@ What this extension deliberately does **not** do:
 - Does **not** hide itself from the page, the user, or the platform.
 - Does **not** spoof user activity, modify authentication, or manipulate
   server requests.
-- Does **not** auto-submit on live graded or monitored assessments. Enter/Space submission is available only when enabled for an explicitly opted-in local-file or localhost practice page.
+- Enter/Space submission requires the setting and an authorized local fixture or the explicit CCBP practice route; do not use it for graded or monitored assessments.
 - Does **not** read or upload answer content.
 
 If your quiz platform's terms of service restrict browser extensions or
@@ -858,7 +861,7 @@ This extension:
 - Does not attempt to evade proctoring, anti-cheat, or automation
   detection.
 - Does not hide itself from the page, the user, or the platform.
-- Does not auto-submit on live graded or monitored assessments; Enter/Space submission is restricted to opted-in local practice.
+- Enter/Space submission is limited to opted-in local fixtures and the explicit CCBP practice route; do not use it for graded or monitored assessments.
 - Uses the minimum permissions required for the documented behavior.
 
 All diagnostic logs are written to the browser's DevTools console only
@@ -984,7 +987,7 @@ Use this checklist to verify KeyPilot works end-to-end. Open `practice-quiz-port
 - [ ] **R2.** Press `2`; confirm the selected option enables the button but it still says `SUBMIT`.
 - [ ] **R3.** Press `Enter` or `Space`; the local Submit button should activate and then change to `NEXT`. It must not activate `NEXT` on subsequent key presses.
 - [ ] **R4.** Turn practice submission OFF; Enter and Space must not activate the button.
-- [ ] **R5.** Open a regular remote website, turn the setting ON, and press Enter/Space; submission must remain disabled because the page is not a local practice origin.
+- [ ] **R5.** Open an unrelated remote origin or a non-practice CCBP route with the setting ON; Enter/Space submission must remain disabled.
 
 ### GitHub footer
 
@@ -993,9 +996,9 @@ Use this checklist to verify KeyPilot works end-to-end. Open `practice-quiz-port
 
 ---
 
-## Test status (v2.1.1)
+## Test status (v2.1.2)
 
-The v2.1.1 source changes have been committed to the public repository. They
+The v2.1.2 source changes have been committed to the public repository. They
 were reviewed at the source level, but **the updated project has not yet been
 run in Chrome after these commits**. Do not treat the unchecked checklist as
 passed.
@@ -1003,12 +1006,11 @@ passed.
 ### Confirmed by source inspection
 
 - The manifest version, popup version, footer version, and content-script
-  version are set to 2.1.1.
+  version are set to 2.1.2.
 - The GitHub footer constant points to
   `https://github.com/monu-2008/KeyPilot`.
 - Hush and Instagram links point to the configured AQERIONX destinations.
-- The practice-submit helper requires the setting to be enabled, the page
-  opt-in attribute, and a local-file or localhost origin.
+- The practice-submit helper requires the setting to be enabled and accepts either the opted-in local fixture or the explicit CCBP practice route.
 - Submit-button discovery checks the enclosing question card when the
   detected container is the nested radio-options element.
 - The practice page now keeps the button labelled SUBMIT after option
@@ -1021,8 +1023,7 @@ passed.
 - Enable/disable shortcuts and confirm keys 1–4 select the intended option.
 - Run Diagnostics and verify the question/option counts on the included
   practice page.
-- Test Enter and Space only on the local practice page with the practice
-  setting enabled; ensure they activate Submit once, never Next.
+- Test Enter and Space on the local fixture and the ungraded CCBP practice route with the setting enabled; ensure they activate Submit once, never Next.
 - Click Hush, Instagram, and GitHub links and confirm their destinations.
 - Verify the real quiz page selectors only in a permitted test context;
   the reported DOM has not been independently validated against a live graded
