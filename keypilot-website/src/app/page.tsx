@@ -14,7 +14,7 @@ const LINKS = {
   hush: "https://hush.aqerionx.in/",
   // KeyPilot downloads folder on Google Drive.
   downloadFolder:
-    "https://drive.google.com/drive/folders/1VECvVBTVzq4LtEpLrxpbaGnovaTZ5v9c?usp=sharing",
+    "https://drive.google.com/drive/folders/1Pgris8yh-6anLNvRlU_j5oTwY4FKu90Q?usp=sharing",
 } as const;
 
 const VERSION = "v2.2.2";
