@@ -8,10 +8,10 @@
 const DARK_MODE_KEY = 'keypilot.forceDarkMode';
 const DARK_MODE_ATTR = 'data-keypilot-force-dark';
 const DARK_MODE_FILE = 'dark-mode.css';
-const ALL_SITES_ORIGIN = '<all_urls>';
+const ALL_WEB_ORIGINS = ['http://*/*', 'https://*/*'];
 
 async function hasAllSitesAccess() {
-  return chrome.permissions.contains({ origins: [ALL_SITES_ORIGIN] });
+  return chrome.permissions.contains({ origins: ALL_WEB_ORIGINS });
 }
 
 async function applyDarkModeToTab(tabId, enabled) {
