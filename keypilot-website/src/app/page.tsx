@@ -17,7 +17,7 @@ const LINKS = {
     "https://drive.google.com/drive/folders/1VECvVBTVzq4LtEpLrxpbaGnovaTZ5v9c?usp=sharing",
 } as const;
 
-const VERSION = "v2.2.1";
+const VERSION = "v2.2.2";
 
 const NAV_LINKS = [
   { label: "Home", href: "#home" },
@@ -536,7 +536,7 @@ export default function Page() {
                   <div className="popup-mock-brand-sub">by AQERIONX</div>
                 </div>
               </div>
-              <span className="popup-mock-version">v2.2.1</span>
+              <span className="popup-mock-version">v2.2.2</span>
             </div>
             <div className="popup-mock-pills">
               <button className="popup-mock-pill active">Peach</button>
@@ -570,7 +570,7 @@ export default function Page() {
             </div>
             <div className="popup-mock-footer">
               <span className="popup-mock-footer-brand">AQERIONX</span>
-              · v2.2.1 · Manual submission, always
+              · v2.2.2 · Manual submission, always
             </div>
           </div>
         </div>
@@ -595,8 +595,8 @@ export default function Page() {
             <div className="feature-icon-tile"><IconMoon /></div>
             <h3 className="feature-card-title">Universal Dark Mode</h3>
             <p className="feature-card-body">
-              Use a CCBP-focused dark palette plus a reversible fallback across
-              other websites. Requires your permission for all-site access.
+              Use adaptive dark styling that changes light surfaces and improves text contrast across
+              websites without flipping the whole page. Requires all-site access permission.
             </p>
           </article>
           <article className="feature-card">
@@ -730,7 +730,7 @@ export default function Page() {
           <h3 className="changelog-version">{VERSION}</h3>
           <p className="changelog-meta">Implemented in code · not yet browser-tested by the maintainer</p>
           <ul className="changelog-list">
-            <li><span className="changelog-bullet" />Smart Dark Mode: a CCBP-focused palette plus a generic fallback for other websites; all-sites access is requested only when you enable it.</li>
+            <li><span className="changelog-bullet" />Adaptive Dark Mode replaces full-page inversion with light-surface and text-color adjustments; all-sites access is requested only when enabled.</li>
             <li><span className="changelog-bullet" />Three premium themes (Peach Clay, Midnight, Lavender Glass Clay) with persistence.</li>
             <li><span className="changelog-bullet" />Keyboard shortcuts 1–4 select the corresponding available option on supported practice pages.</li>
             <li><span className="changelog-bullet" />Built-in Diagnostics with real checks, status states, and Copy Debug Report.</li>
