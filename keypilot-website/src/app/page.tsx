@@ -12,17 +12,12 @@ const LINKS = {
   github: "https://github.com/monu-2008/KeyPilot",
   instagram: "https://www.instagram.com/aqerionx/",
   hush: "https://hush.aqerionx.in/",
-  // Primary download — Google Drive share URL (safest: works for any
-  // "Anyone with the link" file, no virus-scan confirmation wall).
-  downloadDrive:
-    "https://drive.google.com/file/d/1LvV209HhvlyzugUx7WAkFLfJ_dz4nNOW/view?usp=sharing",
-  // Direct-download form — same file ID. Drive may show a confirmation
-  // page for larger files; if so, the share URL above is the fallback.
-  downloadDirect:
-    "https://drive.google.com/uc?export=download&id=1LvV209HhvlyzugUx7WAkFLfJ_dz4nNOW",
+  // KeyPilot downloads folder on Google Drive.
+  downloadFolder:
+    "https://drive.google.com/drive/folders/1VECvVBTVzq4LtEpLrxpbaGnovaTZ5v9c?usp=sharing",
 } as const;
 
-const VERSION = "v2.1.1";
+const VERSION = "v2.1.2";
 
 const NAV_LINKS = [
   { label: "Home", href: "#home" },
@@ -438,11 +433,11 @@ export default function Page() {
             <IconInstagram size={16} />
           </a>
           <a
-            href={LINKS.downloadDirect}
+            href={LINKS.downloadFolder}
             target="_blank"
             rel="noopener noreferrer"
             className="btn-pill btn-pill-primary"
-            aria-label="Download KeyPilot ZIP package from Google Drive"
+            aria-label="Open KeyPilot downloads folder in Google Drive"
           >
             <IconDownload size={15} />
             <span className="navbar-download-label">Download ZIP</span>
@@ -478,7 +473,7 @@ export default function Page() {
           </p>
           <div className="hero-ctas">
             <a
-              href={LINKS.downloadDirect}
+              href={LINKS.downloadFolder}
               target="_blank"
               rel="noopener noreferrer"
               className="btn-pill btn-pill-primary"
@@ -494,11 +489,11 @@ export default function Page() {
           <p className="cta-download-fallback">
             Download not starting?{" "}
             <a
-              href={LINKS.downloadDrive}
+              href={LINKS.downloadFolder}
               target="_blank"
               rel="noopener noreferrer"
             >
-              Open the Google Drive file
+              Open the Google Drive folder
             </a>
           </p>
           <div className="hero-points">
@@ -774,8 +769,8 @@ export default function Page() {
                 </a>
               </li>
               <li>
-                <a href={LINKS.downloadDirect} target="_blank" rel="noopener noreferrer">
-                  Download ZIP <IconExternal />
+                <a href={LINKS.downloadFolder} target="_blank" rel="noopener noreferrer">
+                  Google Drive Folder <IconExternal />
                 </a>
               </li>
               <li>
