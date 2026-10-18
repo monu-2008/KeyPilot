@@ -236,7 +236,7 @@ FORCE_DARK_MODE.addEventListener('change', async () => {
 
   try {
     if (enabled) {
-      renderDarkModeState(false, 'Chrome will ask to allow access to all websites…');
+      if (DARK_MODE_STATUS) DARK_MODE_STATUS.textContent = 'Chrome will ask to allow access to all websites…';
       // This is called directly from the user's toggle gesture; all-sites
       // access remains optional until the user confirms Chrome's prompt.
       const granted = await chrome.permissions.request({ origins: ['<all_urls>'] });
