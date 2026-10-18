@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "KeyPilot by AQERIONX",
-  "version": "2.2.1",
-  "description": "Keyboard navigation plus CCBP-focused Smart Dark Mode and a reversible fallback for other websites.",
+  "version": "2.2.2",
+  "description": "Keyboard navigation plus adaptive Smart Dark Mode that darkens light surfaces while keeping text readable.",
   "permissions": [
     "activeTab",
     "scripting",
