@@ -1002,6 +1002,15 @@ Use this checklist to verify KeyPilot works end-to-end. Open `practice-quiz-port
 - [ ] **R4.** Turn practice submission OFF; Enter and Space must not activate the button.
 - [ ] **R5.** Open an unrelated remote origin or a non-practice CCBP route with the setting ON; Enter/Space submission must remain disabled.
 
+### Universal Dark Mode
+
+- [ ] **D1.** Turn Universal Dark Mode ON; Chrome should request all-sites access before applying any page filter.
+- [ ] **D2.** Approve access; confirm the current supported web tab becomes dark and the popup reports the number of open tabs updated.
+- [ ] **D3.** Open or navigate to a new website, including CCBP; confirm the saved ON preference applies automatically.
+- [ ] **D4.** Turn the toggle OFF; confirm the injected filter is removed from accessible tabs.
+- [ ] **D5.** Deny all-sites access; confirm the toggle remains OFF and keyboard shortcuts continue to work on a tab where they are enabled.
+- [ ] **D6.** Check photos, videos, inputs, fixed headers and long pages; note any site-specific rendering issues. Browser-internal pages and some complex sites may not support injection.
+
 ### GitHub footer
 
 - [ ] **G1.** Open the popup and verify the GitHub pill is enabled.
@@ -1015,8 +1024,7 @@ The v2.2.0 source changes have been committed to the public repository. The Java
 
 ### Confirmed by source inspection
 
-- The manifest version, popup version, footer version, and content-script
-  version are set to 2.1.2.
+- The manifest, popup, footer and content diagnostics versions are set to 2.2.0.
 - The GitHub footer constant points to
   `https://github.com/monu-2008/KeyPilot`.
 - Hush and Instagram links point to the configured AQERIONX destinations.
