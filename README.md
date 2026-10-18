@@ -273,9 +273,8 @@ quiz-keyboard-navigator/
 - Does **not** read answer content, send network requests, modify
   authentication, spoof activity, or interact with proctoring /
   anti-cheating / attempt-limit / session code.
-- Does **not** auto-submit on live graded or monitored quizzes. The
-  optional Enter-to-submit is hard-gated to local practice pages only
-  (see [Enter-to-submit](#enter-to-submit-practice-mode-only)).
+- Does **not** auto-submit on live graded or monitored quizzes. Enter / Space submission uses its separate practice-mode authorization (see [Enter / Space-to-submit](#enter--space-to-submit-practice-mode-only)).
+- Universal Dark Mode changes page appearance only; it does not select answers or submit forms.
 - Does **not** hide itself from the page or the user.
 - Does **not** bypass termination controls or automation detection.
 
