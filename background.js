@@ -112,8 +112,8 @@ async function applyToAllOpenTabs(enabled) {
   );
 
   return {
-    appliedTabs: outcomes.filter((outcome) => outcome.applied).length,
-    skippedTabs: outcomes.filter((outcome) => !outcome.applied).length
+    appliedTabs: outcomes.filter((outcome) => outcome.ok && outcome.applied).length,
+    skippedTabs: outcomes.filter((outcome) => !outcome.ok).length
   };
 }
 
