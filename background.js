@@ -1,5 +1,5 @@
 /*
- * KeyPilot by AQERIONX — MV3 service worker (v2.2.0)
+ * KeyPilot by AQERIONX — MV3 service worker (v2.2.1)
  * Manages the user's opt-in Universal Dark Mode across existing and future tabs.
  */
 
@@ -7,6 +7,7 @@
 
 const DARK_MODE_KEY = 'keypilot.forceDarkMode';
 const DARK_MODE_ATTR = 'data-keypilot-force-dark';
+const DARK_MODE_PROFILE_ATTR = 'data-keypilot-dark-profile';
 const DARK_MODE_FILE = 'dark-mode.css';
 const ALL_WEB_ORIGINS = ['http://*/*', 'https://*/*'];
 
@@ -24,7 +25,8 @@ async function applyDarkModeToTab(tabId, enabled) {
       target: { tabId },
       func: (attributeName) => ({
         supported: location.protocol === 'http:' || location.protocol === 'https:',
-        alreadyEnabled: document.documentElement?.getAttribute(attributeName) === 'true'
+        alreadyEnabled: document.documentElement?.getAttribute(attributeName) === 'true',
+        profile: location.hostname.toLowerCase() === 'learning.ccbp.in' ? 'ccbp' : 'generic'
       }),
       args: [DARK_MODE_ATTR]
     });
@@ -33,8 +35,11 @@ async function applyDarkModeToTab(tabId, enabled) {
     if (!state?.supported) {
       return { ok: true, applied: false, reason: 'unsupported_url' };
     }
+    // Refresh the stylesheet for tabs already darkened before an extension update.
     if (state.alreadyEnabled) {
-      return { ok: true, applied: true, reason: 'already_enabled' };
+      try {
+        await chrome.scripting.removeCSS({ target: { tabId }, files: [DARK_MODE_FILE] });
+      } catch (_) {}
     }
 
     // insertCSS uses Chrome's extension injection API rather than a page-created
@@ -47,12 +52,13 @@ async function applyDarkModeToTab(tabId, enabled) {
     try {
       await chrome.scripting.executeScript({
         target: { tabId },
-        func: (attributeName) => {
+        func: (attributeName, profileAttributeName, profile) => {
           if (document.documentElement) {
             document.documentElement.setAttribute(attributeName, 'true');
+            document.documentElement.setAttribute(profileAttributeName, profile);
           }
         },
-        args: [DARK_MODE_ATTR]
+        args: [DARK_MODE_ATTR, DARK_MODE_PROFILE_ATTR, state.profile]
       });
     } catch (error) {
       try {
@@ -61,7 +67,7 @@ async function applyDarkModeToTab(tabId, enabled) {
       throw error;
     }
 
-    return { ok: true, applied: true, reason: 'enabled' };
+    return { ok: true, applied: true, reason: state.alreadyEnabled ? 'refreshed' : 'enabled' };
   }
 
   // Remove the opt-in marker first; this instantly turns off the conditional CSS
@@ -70,16 +76,17 @@ async function applyDarkModeToTab(tabId, enabled) {
   try {
     const [result] = await chrome.scripting.executeScript({
       target: { tabId },
-      func: (attributeName) => {
+      func: (attributeName, profileAttributeName) => {
         const root = document.documentElement;
         if (!root || (location.protocol !== 'http:' && location.protocol !== 'https:')) {
           return { supported: false, wasEnabled: false };
         }
         const active = root.getAttribute(attributeName) === 'true';
         root.removeAttribute(attributeName);
+        root.removeAttribute(profileAttributeName);
         return { supported: true, wasEnabled: active };
       },
-      args: [DARK_MODE_ATTR]
+      args: [DARK_MODE_ATTR, DARK_MODE_PROFILE_ATTR]
     });
     wasEnabled = result?.result?.wasEnabled === true;
     if (result?.result?.supported !== true) {
