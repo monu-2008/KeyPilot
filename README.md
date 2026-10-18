@@ -1,4 +1,4 @@
-# KeyPilot by AQERIONX (Chrome MV3, v2.1.2)
+# KeyPilot by AQERIONX (Chrome MV3, v2.2.0)
 
 A minimal Manifest V3 Chrome extension that lets you pick quiz answer
 options with the keyboard keys `1`–`4`. It works on standard radio inputs,
@@ -8,7 +8,7 @@ structure reported in the inspection report
 (`[data-testid="card"]` → `[data-testid="radioGroupOptions"]` →
 `label.radioButtonLabel` → hidden `input[type="radio"]`).
 
-Enter / Space-to-submit requires the setting to be enabled. It is supported on the local practice fixtures and the explicit `https://learning.ccbp.in/default-question/practice/...` route. Other remote origins and portal routes remain blocked; use auto-submit only for ungraded practice.
+KeyPilot adds an opt-in **Universal Dark Mode** that applies a reversible dark filter to current and future websites after the user grants optional all-sites access. It includes CCBP pages. The existing keyboard shortcuts and practice-submit controls remain separately configurable.
 
 > ⚠️ **Compatibility notice.** The portal-specific selectors are based on
 > a **reported** DOM inspection. They have **not** been verified on the
@@ -40,6 +40,7 @@ deployment instructions.
 
 ## Table of contents
 
+1. [What changed in v2.2.0 (Universal Dark Mode)](#what-changed-in-v220-universal-dark-mode)
 1. [What changed in v2.1.2 (CCBP practice route + diagnostics)](#what-changed-in-v212-ccbp-practice-route--diagnostics)
 2. [What changed in v2.1.1 (published repository and practice-test fix)](#what-changed-in-v211-published-repository-and-practice-test-fix)
 2. [What changed in v2.1.0 (three themes + Explore AQERIONX footer)](#what-changed-in-v210-three-themes--explore-aqerionx-footer)
@@ -66,6 +67,17 @@ deployment instructions.
 23. [Compatibility limitations (honest)](#compatibility-limitations-honest)
 24. [Privacy](#privacy)
 25. [Test status (v2.1.1)](#test-status-v211)
+---
+
+## What changed in v2.2.0 (Universal Dark Mode)
+
+- Added a persistent all-sites dark-mode toggle to the popup.
+- With the user's confirmation, Chrome's optional `<all_urls>` host access lets KeyPilot apply a reversible filter to all open, supported web tabs and to future page navigations, including CCBP.
+- Added an MV3 background service worker to keep the preference applied across tabs and browser sessions.
+- The filter is heuristic: browser-internal pages are excluded, and some complex websites may render imperfectly.
+- The website-wide permission is optional and is requested only when the user turns Universal Dark Mode on.
+- Source and syntax have been checked; actual Chrome runtime testing is still needed.
+
 ---
 
 ## What changed in v2.1.2 (CCBP practice route + diagnostics)
@@ -225,8 +237,10 @@ fixes based on the DOM inspection report:
 
 ```
 quiz-keyboard-navigator/
-├── manifest.json               # MV3 manifest; activeTab + scripting + storage. Name: "KeyPilot by AQERIONX", v2.0.0
-├── content.js                  # Keyboard handler (1-4), Enter-to-submit (practice-gated), option detection, indicator
+├── manifest.json               # MV3 manifest; activeTab + scripting + storage, optional all-sites access. v2.2.0
+├── background.js               # Keeps Universal Dark Mode applied across tabs and navigations
+├── dark-mode.css               # Reversible force-dark filter for supported web pages
+├── content.js                  # Keyboard handler (1-4), practice-submit gate, option detection, indicator
 ├── popup.html                  # KeyPilot layout: header (logo + wordmark + theme toggle), status, shortcuts, controls, diagnostics, settings, footer
 ├── popup.js                    # Theme + settings persistence, GitHub link, copy debug report, real diagnostics
 ├── popup.css                   # Cream Luxury Light (default) + Elegant Dark, glass + neumorphism + gradient
@@ -248,15 +262,14 @@ quiz-keyboard-navigator/
 | ------------- | -------------------------------------------------------------------------------------------- |
 | `activeTab`   | Access the currently focused tab so we can inject the script only there.                    |
 | `scripting`   | Programmatically inject `content.js` into that one tab when you click **Enable**.           |
-| `storage`     | Persist user preferences in `chrome.storage.local` under keys `keypilot.theme`, `keypilot.reducedMotion`, `keypilot.practiceSubmit`. No other data is stored. No network sync. |
+| `storage`     | Persist settings in `chrome.storage.local`, including `keypilot.forceDarkMode`. No browsing history or quiz answers are transmitted; no network sync. |
+| `optional_host_permissions: <all_urls>` | Requested only when the user turns Universal Dark Mode on. Allows the extension to darken all supported websites and future navigations. The user can deny it and keep the rest of KeyPilot. |
 
 **What this extension does NOT do:**
 
-- Does **not** declare a `content_scripts` entry — `content.js` is never
-  injected into any website automatically. It is only loaded into the
-  single tab where you click **Enable**.
-- Does **not** request `<all_urls>`, `host_permissions`, `tabs`, `webRequest`,
-  `cookies`, `webNavigation`, or any other broad permission.
+- Does **not** auto-inject the keyboard shortcut `content.js` into every site. That script is loaded only on the tab where you click **Enable**.
+- Universal Dark Mode can request optional `<all_urls>` host access only after you turn the feature on. It is used to apply the dark-mode stylesheet; it does not collect or upload browsing data.
+- Does not request `webRequest`, `cookies`, or `webNavigation`.
 - Does **not** read answer content, send network requests, modify
   authentication, spoof activity, or interact with proctoring /
   anti-cheating / attempt-limit / session code.
@@ -428,12 +441,13 @@ Open the **Settings** section (click the "Settings" header to expand). You can c
 
 | Setting | What it does | Default | Storage key |
 |---|---|---|---|
-| **Theme** | Cream Luxury or Dark. Same as the header toggle — both stay in sync. | Cream Luxury | `keypilot.theme` |
+| **Theme** | Peach, Midnight, or Lavender popup theme. | Peach | `keypilot.theme` |
+| **Universal Dark Mode** | Apply the force-dark filter to all supported websites and future navigations, including CCBP. Chrome asks for all-sites access when enabled. | Off | `keypilot.forceDarkMode` |
 | **Reduced motion** | Disables all animations and transitions, even if your OS doesn't have reduced motion enabled. | Off | `keypilot.reducedMotion` |
 | **Enter to submit** | Enables Enter-to-submit on practice pages only. See [Enter-to-submit](#enter-to-submit-practice-mode-only). | Off | `keypilot.practiceSubmit` |
-| **Reset to defaults** | Clears all three keys from `chrome.storage.local` and restores defaults. | — | — |
+| **Reset to defaults** | Clears the saved settings and restores defaults; granted Chrome site access is not revoked automatically. | — | — |
 
-All settings are persisted to `chrome.storage.local` and restored when the popup reopens. Changes propagate to other open popup windows via the `chrome.storage.onChanged` listener.
+All settings are persisted to `chrome.storage.local` and restored when the popup reopens. Universal Dark Mode remains optional; Chrome site access is requested only when its toggle is switched on. Changes propagate to other open popup windows via the `chrome.storage.onChanged` listener.
 
 ---
 
@@ -861,7 +875,7 @@ This extension:
 - Does not attempt to evade proctoring, anti-cheat, or automation
   detection.
 - Does not hide itself from the page, the user, or the platform.
-- Enter/Space submission is limited to opted-in local fixtures and the explicit CCBP practice route; do not use it for graded or monitored assessments.
+- Enter/Space submission follows its separate practice-mode authorization and is intended only for ungraded practice. Universal Dark Mode is a visual filter and does not submit forms.
 - Uses the minimum permissions required for the documented behavior.
 
 All diagnostic logs are written to the browser's DevTools console only
@@ -996,12 +1010,9 @@ Use this checklist to verify KeyPilot works end-to-end. Open `practice-quiz-port
 
 ---
 
-## Test status (v2.1.2)
+## Test status (v2.2.0)
 
-The v2.1.2 source changes have been committed to the public repository. They
-were reviewed at the source level, but **the updated project has not yet been
-run in Chrome after these commits**. Do not treat the unchecked checklist as
-passed.
+The v2.2.0 source changes have been committed to the public repository. The JavaScript and manifest have been syntax-checked, but **the feature has not yet been tested in Chrome after these commits**. Do not treat the unchecked checklist as passed.
 
 ### Confirmed by source inspection
 
