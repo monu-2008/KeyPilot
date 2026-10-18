@@ -1,5 +1,5 @@
 /**
- * KeyPilot by AQERIONX — popup script (Manifest V3, v2.1.1)
+ * KeyPilot by AQERIONX — popup script (Manifest V3, v2.1.2)
  *
  * Responsibilities:
  *   - Three-theme management: peach (default) / midnight / lavender,
@@ -27,7 +27,7 @@
 'use strict';
 
 const TAG = '[KeyPilot]';
-const VERSION = '2.1.1';
+const VERSION = '2.1.2';
 
 // =========================================================================
 // CONFIGURATION — EXTERNAL LINKS
@@ -462,6 +462,8 @@ DIAG_BTN.addEventListener('click', async () => {
     lines.push(`injectable:  yes`);
     lines.push(`practice:    setting=${resp.practiceSubmitSetting} pageAuthorized=${resp.practicePageAuthorized}`);
     lines.push(`submitBtn:   ${resp.submitButtonFound ? 'found' : 'not found'}`);
+    lines.push(`buttonText:  ${resp.submitButtonText || '(none)'}`);
+    lines.push(`answer:      ${resp.answerSelected ? 'selected' : 'not selected'}`);
     const q = resp.question;
     const qDesc = q
       ? q.tag +
