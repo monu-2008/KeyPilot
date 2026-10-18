@@ -72,7 +72,7 @@ deployment instructions.
 ## What changed in v2.2.0 (Universal Dark Mode)
 
 - Added a persistent all-sites dark-mode toggle to the popup.
-- With the user's confirmation, Chrome's optional `<all_urls>` host access lets KeyPilot apply a reversible filter to all open, supported web tabs and to future page navigations, including CCBP.
+- With the user's confirmation, Chrome's optional HTTP/HTTPS host access lets KeyPilot apply a reversible filter to all open, supported web tabs and to future page navigations, including CCBP.
 - Added an MV3 background service worker to keep the preference applied across tabs and browser sessions.
 - The filter is heuristic: browser-internal pages are excluded, and some complex websites may render imperfectly.
 - The website-wide permission is optional and is requested only when the user turns Universal Dark Mode on.
@@ -263,12 +263,12 @@ quiz-keyboard-navigator/
 | `activeTab`   | Access the currently focused tab so we can inject the script only there.                    |
 | `scripting`   | Inject `content.js` on the tab where you click **Enable**, and apply/remove `dark-mode.css` on supported tabs after you opt in to Universal Dark Mode. |
 | `storage`     | Persist settings in `chrome.storage.local`, including `keypilot.forceDarkMode`. No browsing history or quiz answers are transmitted; no network sync. |
-| `optional_host_permissions: <all_urls>` | Requested only when the user turns Universal Dark Mode on. Allows the extension to darken all supported websites and future navigations. The user can deny it and keep the rest of KeyPilot. |
+| `optional_host_permissions` (`http://*/*`, `https://*/*`) | Requested only when the user turns Universal Dark Mode on. Allows the extension to darken supported HTTP/HTTPS websites and future navigations. Browser-internal pages remain unavailable. The user can deny it and keep the rest of KeyPilot. |
 
 **What this extension does NOT do:**
 
 - Does **not** auto-inject the keyboard shortcut `content.js` into every site. That script is loaded only on the tab where you click **Enable**.
-- Universal Dark Mode can request optional `<all_urls>` host access only after you turn the feature on. It is used to apply the dark-mode stylesheet; it does not collect or upload browsing data.
+- Universal Dark Mode can request optional HTTP/HTTPS host access only after you turn the feature on. It is used to apply the dark-mode stylesheet; it does not collect or upload browsing data.
 - Does not request `webRequest`, `cookies`, or `webNavigation`.
 - Does **not** read answer content, send network requests, modify
   authentication, spoof activity, or interact with proctoring /
