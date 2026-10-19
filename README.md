@@ -1,4 +1,4 @@
-# KeyPilot by AQERIONX (Chrome MV3, v2.2.4)
+# KeyPilot by AQERIONX (Chrome MV3, v2.2.5)
 
 A minimal Manifest V3 Chrome extension that lets you pick quiz answer
 options with the keyboard keys `1`–`4`. It works on standard radio inputs,
@@ -40,6 +40,7 @@ deployment instructions.
 
 ## Table of contents
 
+1. [What changed in v2.2.5 (adaptive DOM recovery)](#what-changed-in-v225-adaptive-dom-recovery)
 1. [What changed in v2.2.4 (route-independent question detection)](#what-changed-in-v224-route-independent-question-detection)
 1. [What changed in v2.2.3 (CCBP diagnostics + route fix)](#what-changed-in-v223-ccbp-diagnostics--route-fix)
 1. [What changed in v2.2.2 (Adaptive Dark Mode fix)](#what-changed-in-v222-adaptive-dark-mode-fix)
@@ -71,6 +72,17 @@ deployment instructions.
 23. [Compatibility limitations (honest)](#compatibility-limitations-honest)
 24. [Privacy](#privacy)
 25. [Test status (v2.1.1)](#test-status-v211)
+---
+
+## What changed in v2.2.5 (adaptive DOM recovery)
+
+- Added adaptive fallback detection for visible ARIA/custom answer controls when a page has none of the known question containers.
+- Improved nested-option deduplication to prefer semantic answer controls instead of counting both a wrapper and its child.
+- Diagnostics now includes a `detector` field (`known-selectors`, `native-radio-fallback`, `custom-option-fallback`, or `no-matching-question`) to show which path was used.
+- The detector re-reads the current DOM on each shortcut press; this can handle many route changes and client-side re-renders without patching extension source code or sending page content to a server.
+- It cannot guarantee support for every unique page structure, and does not automatically rewrite its own source code. Unknown layouts can still require a new detector rule after a diagnostic report.
+- Enter/Space submission remains restricted to the existing explicitly allowlisted practice routes.
+
 ---
 
 ## What changed in v2.2.4 (route-independent question detection)
@@ -278,7 +290,7 @@ fixes based on the DOM inspection report:
 
 ```
 quiz-keyboard-navigator/
-├── manifest.json               # MV3 manifest; activeTab + scripting + storage, optional all-sites access. v2.2.4
+├── manifest.json               # MV3 manifest; activeTab + scripting + storage, optional all-sites access. v2.2.5
 ├── background.js               # Keeps Universal Dark Mode applied across tabs and navigations
 ├── dark-mode.css               # Reversible force-dark filter for supported web pages
 ├── content.js                  # Keyboard handler (1-4), practice-submit gate, option detection, indicator
@@ -1059,17 +1071,17 @@ Use this checklist to verify KeyPilot works end-to-end. Open `practice-quiz-port
 
 ---
 
-## Test status (v2.2.4)
+## Test status (v2.2.5)
 
-The v2.2.4 source changes have been committed to the public repository. JavaScript and the manifest have been syntax-checked, but **route-independent question detection has not yet been verified against all live CCBP quiz layouts**. Do not treat the unchecked checklist as passed.
+The v2.2.5 source changes have been committed to the public repository. JavaScript and the manifest have been syntax-checked, but **adaptive DOM recovery has not yet been verified against all live CCBP quiz layouts**. Do not treat the unchecked checklist as passed.
 
 ### Confirmed by source inspection
 
-- The manifest, popup diagnostics, content diagnostics and landing-page badge are set to v2.2.4.
+- The manifest, popup diagnostics, content diagnostics and landing-page badge are set to v2.2.5.
 - The GitHub footer constant points to
   `https://github.com/monu-2008/KeyPilot`.
 - Hush and Instagram links point to the configured AQERIONX destinations.
-- The practice-submit helper requires the setting to be enabled and accepts either the opted-in local fixture or one of the explicitly allowlisted CCBP practice routes; the 1–4 selection feature remains route-independent.
+- The practice-submit helper requires the setting to be enabled and accepts either the opted-in local fixture or one of the explicitly allowlisted CCBP practice routes; the 1–4 selection feature remains route-independent and includes adaptive custom-control fallback.
 - Submit-button discovery checks the enclosing question card when the
   detected container is the nested radio-options element.
 - The practice page now keeps the button labelled SUBMIT after option
