@@ -1,5 +1,5 @@
 /**
- * KeyPilot by AQERIONX — content script (Manifest V3, v2.2.4)
+ * KeyPilot by AQERIONX — content script (Manifest V3, v2.2.5)
  *
  * WHAT THIS FILE DOES
  *   Listens for keys 1-4 and selects the matching answer option on the
@@ -76,7 +76,7 @@
   // 2. State + constants
   // =========================================================================
   const TAG = '[KeyPilot]';
-  const VERSION = '2.2.4';
+  const VERSION = '2.2.5';
 
   let enabled = true;
   let practiceSubmit = false;     // Enter-to-submit: ONLY honored on pages marked as practice
@@ -84,6 +84,7 @@
   let indicatorTimer = null;
   let lastSelectedKey = null;        // debounces identical repeat keydown
   let lastSelectedAt = 0;
+  let lastDetectionStrategy = 'not-run';
 
   // Question containers — most specific first. `form` is last-resort only,
   // because a quiz page often has one huge <form> wrapping everything.
@@ -110,13 +111,16 @@
   const CUSTOM_OPTION_SELECTORS = [
     '[role="radio"]',
     '[role="checkbox"]',
+    '[aria-checked]',
+    '[data-answer]',
     '[data-option]',
     '[data-option-index]',
     '[data-index]',
     '.quiz-option',
     '.answer-option',
     '.option',
-    '.choice'
+    '.choice',
+    '[class*="BaseRadioButtonWrapper"]'
   ].join(', ');
 
   // Classes that mark the visible wrapper of a hidden radio.
@@ -297,26 +301,51 @@
   function getOptionsForQuestion(questionEl) {
     if (!questionEl) return [];
 
-    // 1) Real radios — include hidden ones (modern styled forms hide them
-    //    and put the visible UI on a sibling <label>).
+    // Prefer real radios where available, including hidden radios paired with
+    // visible labels. This avoids double-counting wrappers around native inputs.
     const radios = Array.from(questionEl.querySelectorAll('input[type="radio"]'));
     if (radios.length > 0) {
-      return radios.map(r => buildRadioOption(r, questionEl));
+      return radios.map(radio => buildRadioOption(radio, questionEl));
     }
 
-    // 2) Custom option patterns. Filter out elements that contain a radio
-    //    (they're already represented by the radio path above when radios
-    //    exist; here we're in the no-radio branch so this is just hygiene).
-    const custom = Array.from(questionEl.querySelectorAll(CUSTOM_OPTION_SELECTORS));
-    const deduped = custom.filter(el => {
-      // Skip elements that contain another matched option (nested).
-      const containsNested = custom.some(other => other !== el && el.contains(other));
-      if (containsNested) return false;
-      // Skip elements whose closest ancestor is also matched (we want the outermost).
-      const ancestorMatched = custom.some(other => other !== el && other.contains(el) && !custom.some(o3 => o3 !== other && o3.contains(other) && o3.contains(el)));
-      return !ancestorMatched;
-    });
-    return deduped.map(buildCustomOption);
+    // Runtime-adaptive custom controls. Prefer semantic answer nodes (ARIA roles,
+    // checked state, explicit data attributes) over nested visual wrappers.
+    const custom = Array.from(questionEl.querySelectorAll(CUSTOM_OPTION_SELECTORS))
+      .filter(el => {
+        if (!isVisible(el)) return false;
+        if (el.disabled || el.getAttribute('aria-disabled') === 'true') return false;
+        return true;
+      });
+
+    const priority = el => {
+      const role = el.getAttribute('role');
+      if (role === 'radio' || role === 'checkbox' || el.hasAttribute('aria-checked')) return 100;
+      if (el.hasAttribute('data-answer') || el.hasAttribute('data-option') ||
+          el.hasAttribute('data-option-index') || el.hasAttribute('data-index')) return 90;
+      if (el.classList.contains('quiz-option') || el.classList.contains('answer-option') ||
+          el.classList.contains('option') || el.classList.contains('choice') ||
+          (typeof el.className === 'string' && el.className.includes('BaseRadioButtonWrapper'))) return 80;
+      return 50;
+    };
+
+    // Keep one clickable node for each nested option: use the highest-priority
+    // semantic node and discard any matched ancestor/descendant duplicate.
+    const ranked = custom.map((element, order) => ({ element, order, score: priority(element) }))
+      .sort((a, b) => b.score - a.score || a.order - b.order);
+    const deduped = [];
+    for (const item of ranked) {
+      const el = item.element;
+      const overlaps = deduped.some(existing => existing === el ||
+        existing.contains(el) || el.contains(existing));
+      if (!overlaps) deduped.push(el);
+    }
+
+    return deduped
+      .sort((a, b) => {
+        if (a === b) return 0;
+        return a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
+      })
+      .map(buildCustomOption);
   }
 
   // =========================================================================
@@ -385,32 +414,94 @@
     })[0];
   }
 
+  function getFallbackCustomQuestion() {
+    const customOptions = Array.from(document.querySelectorAll(CUSTOM_OPTION_SELECTORS))
+      .filter(el => {
+        if (!isVisible(el) || el.disabled || el.getAttribute('aria-disabled') === 'true') return false;
+        // Avoid considering a custom wrapper that actually contains a native radio;
+        // native radios are handled by getFallbackRadioQuestion().
+        return !el.querySelector('input[type="radio"]');
+      });
+    if (customOptions.length < 2) return null;
+
+    // If a quiz does not use known card classes or stable test IDs, walk up from
+    // each visible option and evaluate nearby ancestors as candidate question
+    // scopes. No page text is stored or sent anywhere; each shortcut re-scans live DOM.
+    const scopes = new Set();
+    for (const option of customOptions) {
+      let current = option.parentElement;
+      let depth = 0;
+      while (current && current !== document.documentElement && depth < 7) {
+        const optionCount = getOptionsForQuestion(current).length;
+        if (optionCount >= 2 && optionCount <= 8) scopes.add(current);
+        current = current.parentElement;
+        depth += 1;
+      }
+    }
+
+    const candidates = Array.from(scopes).map(element => {
+      const options = getOptionsForQuestion(element);
+      const rect = element.getBoundingClientRect();
+      return {
+        element,
+        optionCount: options.length,
+        area: Math.max(0, rect.width) * Math.max(0, rect.height),
+        distance: Math.abs(rect.top + rect.height / 2 - window.innerHeight / 2)
+      };
+    }).filter(candidate =>
+      candidate.optionCount >= 2 && candidate.optionCount <= 8 &&
+      candidate.area > 0 && isVisible(candidate.element)
+    );
+
+    // Tightest plausible group wins; the viewport center breaks ties when
+    // a page has more than one visible question or option group.
+    candidates.sort((a, b) => a.area - b.area || a.distance - b.distance);
+    return candidates[0]?.element || null;
+  }
+
   function getCurrentlyVisibleQuestion() {
     const allCandidates = Array.from(document.querySelectorAll(QUESTION_SELECTORS));
 
-    // Restrict to candidates that have at least one option.
+    // Start with known semantic selectors on every key press. This runs against
+    // the current DOM, so SPA route changes and question re-renders are not cached.
     const withOptions = allCandidates.filter(c => getOptionsForQuestion(c).length > 0);
-    if (withOptions.length === 0) return getFallbackRadioQuestion();
+    if (withOptions.length > 0) {
+      // Filter out oversized containers (more than 2x viewport height) IF
+      // we have smaller alternatives. This avoids picking a whole-page <form>.
+      const vh = window.innerHeight;
+      const small = withOptions.filter(c => c.getBoundingClientRect().height <= vh * 2);
+      const candidates = small.length > 0 ? small : withOptions;
 
-    // Filter out oversized containers (more than 2x viewport height) IF
-    // we have smaller alternatives. This avoids picking a whole-page <form>.
-    const vh = window.innerHeight;
-    const small = withOptions.filter(c => c.getBoundingClientRect().height <= vh * 2);
-    const candidates = small.length > 0 ? small : withOptions;
-
-    const viewportCenter = vh / 2;
-    let best = candidates[0];
-    let bestDist = Infinity;
-    for (const el of candidates) {
-      const rect = el.getBoundingClientRect();
-      const center = rect.top + rect.height / 2;
-      const dist = Math.abs(center - viewportCenter);
-      if (dist < bestDist) {
-        best = el;
-        bestDist = dist;
+      const viewportCenter = vh / 2;
+      let best = candidates[0];
+      let bestDist = Infinity;
+      for (const el of candidates) {
+        const rect = el.getBoundingClientRect();
+        const center = rect.top + rect.height / 2;
+        const dist = Math.abs(center - viewportCenter);
+        if (dist < bestDist) {
+          best = el;
+          bestDist = dist;
+        }
       }
+      lastDetectionStrategy = 'known-selectors';
+      return best;
     }
-    return best;
+
+    const radioFallback = getFallbackRadioQuestion();
+    if (radioFallback) {
+      lastDetectionStrategy = 'native-radio-fallback';
+      return radioFallback;
+    }
+
+    const customFallback = getFallbackCustomQuestion();
+    if (customFallback) {
+      lastDetectionStrategy = 'custom-option-fallback';
+      return customFallback;
+    }
+
+    lastDetectionStrategy = 'no-matching-question';
+    return null;
   }
 
   // =========================================================================
@@ -842,6 +933,7 @@
             enabled,
             version: VERSION,
             url: location.href,
+            detectionMode: lastDetectionStrategy,
             practiceSubmitSetting: practiceSubmit,
             practicePageAuthorized: isPracticePageAuthorized(),
             submitButtonFound: !!submitBtn,
@@ -892,6 +984,7 @@
         enabled,
         version: VERSION,
         url: location.href,
+        detectionMode: lastDetectionStrategy,
         practiceSubmitSetting: practiceSubmit,
         practicePageAuthorized: isPracticePageAuthorized(),
         submitButtonFound: !!submitBtn,
