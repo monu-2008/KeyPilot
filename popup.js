@@ -1,5 +1,5 @@
 /**
- * KeyPilot by AQERIONX — popup script (Manifest V3, v2.2.5)
+ * KeyPilot by AQERIONX — popup script (Manifest V3, v2.2.6)
  *
  * Responsibilities:
  *   - Three-theme management: peach (default) / midnight / lavender,
@@ -29,7 +29,7 @@
 'use strict';
 
 const TAG = '[KeyPilot]';
-const VERSION = '2.2.5';
+const VERSION = '2.2.6';
 
 // =========================================================================
 // CONFIGURATION — EXTERNAL LINKS
@@ -59,6 +59,8 @@ const THEME_KEY           = 'keypilot.theme';            // 'peach' | 'midnight'
 const REDUCED_MOTION_KEY  = 'keypilot.reducedMotion';    // boolean
 const PRACTICE_SUBMIT_KEY = 'keypilot.practiceSubmit';   // boolean
 const FORCE_DARK_MODE_KEY = 'keypilot.forceDarkMode';    // boolean — all-sites mode
+const CCBP_NAV_ENABLED_KEY = 'keypilot.ccbpKeyboardNavEnabled';
+const CCBP_ORIGIN_PATTERN = 'https://learning.ccbp.in/*';
 
 const DEFAULT_THEME = 'peach';
 const DEFAULT_REDUCED_MOTION = false;
@@ -296,7 +298,7 @@ RESET_BTN.addEventListener('click', async () => {
     await chrome.runtime.sendMessage({ type: 'keypilot:setForceDarkMode', enabled: false });
   } catch (_) {}
   await chrome.storage.local.remove([
-    THEME_KEY, REDUCED_MOTION_KEY, PRACTICE_SUBMIT_KEY, FORCE_DARK_MODE_KEY
+    THEME_KEY, REDUCED_MOTION_KEY, PRACTICE_SUBMIT_KEY, FORCE_DARK_MODE_KEY, CCBP_NAV_ENABLED_KEY
   ]);
   log('Settings reset to defaults.');
 });
@@ -453,6 +455,27 @@ ENABLE_BTN.addEventListener('click', async () => {
   const tab = await getActiveTab();
   if (!tab || !isInjectable(tab)) return;
 
+  let isCCBP = false;
+  try {
+    const url = new URL(tab.url);
+    isCCBP = url.protocol === 'https:' && url.hostname === 'learning.ccbp.in';
+  } catch (_) {}
+
+  let persistAcrossCCBPRoutes = false;
+  if (isCCBP) {
+    try {
+      persistAcrossCCBPRoutes = await chrome.permissions.contains({ origins: [CCBP_ORIGIN_PATTERN] });
+      if (!persistAcrossCCBPRoutes) {
+        // This is a narrow permission for learning.ccbp.in only, requested
+        // from the user's Enable click. It is not the all-sites dark-mode grant.
+        persistAcrossCCBPRoutes = await chrome.permissions.request({ origins: [CCBP_ORIGIN_PATTERN] });
+      }
+    } catch (permissionError) {
+      warn('CCBP route permission was not granted:', permissionError);
+      persistAcrossCCBPRoutes = false;
+    }
+  }
+
   const originalLabel = ENABLE_BTN.querySelector('.btn-label').textContent;
   ENABLE_BTN.querySelector('.btn-label').textContent = 'Enabling…';
   ENABLE_BTN.disabled = true;
@@ -460,7 +483,7 @@ ENABLE_BTN.addEventListener('click', async () => {
   try {
     const before = await getContentState(tab.id);
     if (!before.installed) {
-      log('Injecting content.js into tab', tab.id);
+      log('Injecting content.js into top-level tab', tab.id);
       await injectContentScript(tab.id);
       log('Injection complete.');
     } else {
@@ -471,6 +494,15 @@ ENABLE_BTN.addEventListener('click', async () => {
       type: 'setPracticeSubmit',
       enabled: settings.practiceSubmit
     }, { frameId: 0 });
+
+    if (isCCBP) {
+      await chrome.storage.local.set({ [CCBP_NAV_ENABLED_KEY]: persistAcrossCCBPRoutes });
+      if (persistAcrossCCBPRoutes) {
+        log('CCBP route persistence enabled for learning.ccbp.in.');
+      } else {
+        alert('KeyPilot is enabled on this CCBP tab, but Chrome site access was not granted. To keep it working after moving to another CCBP quiz page, click Enable again and allow access to learning.ccbp.in.');
+      }
+    }
     log('Enable message sent.');
   } catch (err) {
     warn('Enable failed:', err);
@@ -485,6 +517,21 @@ ENABLE_BTN.addEventListener('click', async () => {
 DISABLE_BTN.addEventListener('click', async () => {
   const tab = await getActiveTab();
   if (!tab) return;
+
+  let isCCBP = false;
+  try {
+    const url = new URL(tab.url);
+    isCCBP = url.protocol === 'https:' && url.hostname === 'learning.ccbp.in';
+  } catch (_) {}
+
+  if (isCCBP) {
+    try {
+      await chrome.storage.local.set({ [CCBP_NAV_ENABLED_KEY]: false });
+    } catch (storageError) {
+      warn('Could not clear saved CCBP navigation setting:', storageError);
+    }
+  }
+
   try {
     await chrome.tabs.sendMessage(tab.id, { type: 'disable' }, { frameId: 0 });
     log('Disable message sent.');
