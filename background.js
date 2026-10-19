@@ -1,5 +1,5 @@
 /*
- * KeyPilot by AQERIONX — MV3 service worker (v2.2.5)
+ * KeyPilot by AQERIONX — MV3 service worker (v2.2.6)
  * Manages the user's opt-in Universal Dark Mode across existing and future tabs.
  */
 
@@ -14,6 +14,9 @@ const DARK_MODE_TEXT_ATTR = 'data-keypilot-dark-text';
 const DARK_MODE_BORDER_ATTR = 'data-keypilot-dark-border';
 const DARK_MODE_FILE = 'dark-mode.css';
 const ALL_WEB_ORIGINS = ['http://*/*', 'https://*/*'];
+const CCBP_ORIGIN_PATTERN = 'https://learning.ccbp.in/*';
+const CCBP_NAV_ENABLED_KEY = 'keypilot.ccbpKeyboardNavEnabled';
+const PRACTICE_SUBMIT_KEY = 'keypilot.practiceSubmit';
 
 function applySmartDarkModeInPage(enabled, profile, forceAttr, profileAttr, readyAttr, bgAttr, textAttr, borderAttr) {
   const root = document.documentElement;
@@ -185,6 +188,65 @@ function applySmartDarkModeInPage(enabled, profile, forceAttr, profileAttr, read
   return { supported: true, wasEnabled };
 }
 
+async function hasCCBPAccess() {
+  return chrome.permissions.contains({ origins: [CCBP_ORIGIN_PATTERN] });
+}
+
+function isCCBPUrl(url) {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'https:' && parsed.hostname === 'learning.ccbp.in';
+  } catch (_) {
+    return false;
+  }
+}
+
+async function applyKeyboardNavigationToCCBPTab(tabId) {
+  if (!(await hasCCBPAccess())) return { applied: false, reason: 'permission_missing' };
+
+  const settings = await chrome.storage.local.get([CCBP_NAV_ENABLED_KEY, PRACTICE_SUBMIT_KEY]);
+  if (settings[CCBP_NAV_ENABLED_KEY] !== true) return { applied: false, reason: 'not_enabled' };
+
+  // This helper is called only for the explicitly permissioned CCBP origin.
+  // Injection is top-frame-only; content.js itself exits if accidentally run
+  // within a child frame.
+  await chrome.scripting.executeScript({
+    target: { tabId },
+    files: ['content.js']
+  });
+  await chrome.tabs.sendMessage(tabId, { type: 'enable' }, { frameId: 0 });
+  await chrome.tabs.sendMessage(tabId, {
+    type: 'setPracticeSubmit',
+    enabled: settings[PRACTICE_SUBMIT_KEY] === true
+  }, { frameId: 0 });
+
+  return { applied: true, reason: 'ccbp_navigation_enabled' };
+}
+
+async function syncCCBPTabsFromSavedSetting() {
+  try {
+    const settings = await chrome.storage.local.get(CCBP_NAV_ENABLED_KEY);
+    if (settings[CCBP_NAV_ENABLED_KEY] !== true || !(await hasCCBPAccess())) return;
+    const tabs = await chrome.tabs.query({ url: CCBP_ORIGIN_PATTERN });
+    await Promise.all(tabs.filter(tab => Number.isInteger(tab.id)).map(async tab => {
+      try {
+        await applyKeyboardNavigationToCCBPTab(tab.id);
+      } catch (error) {
+        console.warn('[KeyPilot] Could not restore keyboard navigation on CCBP tab:', error);
+      }
+    }));
+  } catch (error) {
+    console.warn('[KeyPilot] Could not sync CCBP tabs:', error);
+  }
+}
+
+async function syncSavedSettings() {
+  await Promise.all([
+    syncOpenTabsFromSavedSetting(),
+    syncCCBPTabsFromSavedSetting()
+  ]);
+}
+
 async function hasAllSitesAccess() {
   return chrome.permissions.contains({ origins: ALL_WEB_ORIGINS });
 }
@@ -340,16 +402,21 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
 // Apply the saved preference after each normal page navigation, including CCBP.
 // Browser-internal pages and restricted URLs are skipped gracefully.
-chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
-  if (changeInfo.status === 'complete') {
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status === 'complete' || changeInfo.url) {
     void applyIfGloballyEnabled(tabId);
+    if (tab?.url && isCCBPUrl(tab.url)) {
+      void applyKeyboardNavigationToCCBPTab(tabId).catch(error => {
+        console.warn('[KeyPilot] Could not apply keyboard navigation on CCBP navigation:', error);
+      });
+    }
   }
 });
 
 chrome.runtime.onStartup.addListener(() => {
-  void syncOpenTabsFromSavedSetting();
+  void syncSavedSettings();
 });
 
 chrome.runtime.onInstalled.addListener(() => {
-  void syncOpenTabsFromSavedSetting();
+  void syncSavedSettings();
 });
