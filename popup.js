@@ -1,5 +1,5 @@
 /**
- * KeyPilot by AQERIONX — popup script (Manifest V3, v2.2.2)
+ * KeyPilot by AQERIONX — popup script (Manifest V3, v2.2.3)
  *
  * Responsibilities:
  *   - Three-theme management: peach (default) / midnight / lavender,
@@ -8,7 +8,7 @@
  *     preference and stay in sync.
  *   - Settings panel: theme select, reduced-motion, Enter/Space-to-submit
  *     (practice mode only), and all-sites Universal Dark Mode. All persisted.
- *   - Inject content.js into the active tab on Enable (allFrames:true).
+ *   - Inject content.js into the active tab's top-level frame only.
  *   - Send enable/disable + setPracticeSubmit messages to content script.
  *   - Real-checks Diagnostics with loading/success/warn/error states and
  *     Copy Debug Report button.
@@ -29,7 +29,7 @@
 'use strict';
 
 const TAG = '[KeyPilot]';
-const VERSION = '2.2.2';
+const VERSION = '2.2.3';
 
 // =========================================================================
 // CONFIGURATION — EXTERNAL LINKS
@@ -377,7 +377,7 @@ function isInjectable(tab) {
 
 async function getContentState(tabId) {
   try {
-    const resp = await chrome.tabs.sendMessage(tabId, { type: 'status' });
+    const resp = await chrome.tabs.sendMessage(tabId, { type: 'status' }, { frameId: 0 });
     if (resp && resp.installed) {
       return { installed: true, enabled: !!resp.enabled, version: resp.version };
     }
@@ -389,7 +389,7 @@ async function getContentState(tabId) {
 
 async function injectContentScript(tabId) {
   await chrome.scripting.executeScript({
-    target: { tabId, allFrames: true },
+    target: { tabId },
     files: ['content.js']
   });
 }
@@ -397,7 +397,7 @@ async function injectContentScript(tabId) {
 async function sendToActiveTab(message) {
   const tab = await getActiveTab();
   if (!tab) throw new Error('No active tab');
-  return chrome.tabs.sendMessage(tab.id, message);
+  return chrome.tabs.sendMessage(tab.id, message, { frameId: 0 });
 }
 
 // =========================================================================
@@ -466,11 +466,11 @@ ENABLE_BTN.addEventListener('click', async () => {
     } else {
       log('Script already installed; sending enable only.');
     }
-    await chrome.tabs.sendMessage(tab.id, { type: 'enable' });
+    await chrome.tabs.sendMessage(tab.id, { type: 'enable' }, { frameId: 0 });
     await chrome.tabs.sendMessage(tab.id, {
       type: 'setPracticeSubmit',
       enabled: settings.practiceSubmit
-    });
+    }, { frameId: 0 });
     log('Enable message sent.');
   } catch (err) {
     warn('Enable failed:', err);
@@ -486,7 +486,7 @@ DISABLE_BTN.addEventListener('click', async () => {
   const tab = await getActiveTab();
   if (!tab) return;
   try {
-    await chrome.tabs.sendMessage(tab.id, { type: 'disable' });
+    await chrome.tabs.sendMessage(tab.id, { type: 'disable' }, { frameId: 0 });
     log('Disable message sent.');
   } catch (err) {
     warn('Disable failed:', err);
@@ -530,7 +530,7 @@ DIAG_BTN.addEventListener('click', async () => {
       return;
     }
 
-    const resp = await chrome.tabs.sendMessage(tab.id, { type: 'diagnose' });
+    const resp = await chrome.tabs.sendMessage(tab.id, { type: 'diagnose' }, { frameId: 0 });
 
     if (!resp || !resp.ok) {
       setDiagStatus('error',
