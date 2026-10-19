@@ -1,5 +1,5 @@
 /**
- * KeyPilot by AQERIONX — content script (Manifest V3, v2.2.2)
+ * KeyPilot by AQERIONX — content script (Manifest V3, v2.2.3)
  *
  * WHAT THIS FILE DOES
  *   Listens for keys 1-4 and selects the matching answer option on the
@@ -52,6 +52,11 @@
 (() => {
   'use strict';
 
+  // KeyPilot tab commands and diagnostics target the top-level page. Do not
+  // install keyboard handlers inside unrelated third-party iframes (for
+  // example, embedded engagement/tracking frames).
+  if (window.top !== window) return;
+
   // =========================================================================
   // 1. Duplicate-injection guard
   //    On re-Enable, popup.js may call executeScript again. Without this
@@ -71,7 +76,7 @@
   // 2. State + constants
   // =========================================================================
   const TAG = '[KeyPilot]';
-  const VERSION = '2.2.2';
+  const VERSION = '2.2.3';
 
   let enabled = true;
   let practiceSubmit = false;     // Enter-to-submit: ONLY honored on pages marked as practice
@@ -495,7 +500,7 @@
    *
    * The user must enable the setting. Then either:
    *   1. A local fixture opts in with data-keypilot-practice="true", or
-   *   2. The URL matches the known CCBP practice route on its exact HTTPS host.
+   *   2. The URL matches an explicitly supported CCBP practice route on its exact HTTPS host.
    *
    * Other portal routes and other remote origins remain unauthorized.
    */
@@ -509,11 +514,12 @@
     const localOptIn =
       document.documentElement.getAttribute('data-keypilot-practice') === 'true';
 
-    // CCBP's explicitly named practice route; keep the host and path narrow.
+    // Only explicitly named CCBP practice paths are eligible. Other remote
+    // routes, including assessment/course routes, remain unauthorized.
     const ccbpPracticeRoute =
       location.protocol === 'https:' &&
       location.hostname === 'learning.ccbp.in' &&
-      /^\/default-question\/practice(?:\/|$)/.test(location.pathname);
+      /^\/(?:default-question|primitive-coding)\/practice(?:\/|$)/.test(location.pathname);
 
     return ccbpPracticeRoute || (localPracticeOrigin && localOptIn);
   }
@@ -604,7 +610,7 @@
       log(key === 'Enter' ? 'Enter' : 'Space',
           'pressed but practice mode is not authorized on this page. ' +
           'Enable "Enter / Space to submit" and use an authorized local fixture or ' +
-          'the supported CCBP practice route to use this shortcut.');
+          'an explicitly supported CCBP practice route to use this shortcut.');
       return;
     }
 
