@@ -12,9 +12,11 @@ const LINKS = {
   github: "https://github.com/monu-2008/KeyPilot",
   instagram: "https://www.instagram.com/aqerionx/",
   hush: "https://hush.aqerionx.in/",
-  // KeyPilot downloads folder on Google Drive.
-  downloadFolder:
-    "https://drive.google.com/drive/folders/1Pgris8yh-6anLNvRlU_j5oTwY4FKu90Q?usp=sharing",
+  // Direct ZIP download URL; preview link is kept as a fallback.
+  downloadDirect:
+    "https://drive.google.com/uc?export=download&id=1GZRj6vPjUfPpFV8P-b4kWYQHTGOI0WTN",
+  downloadPreview:
+    "https://drive.google.com/file/d/1GZRj6vPjUfPpFV8P-b4kWYQHTGOI0WTN/view?usp=sharing",
 } as const;
 
 const VERSION = "v2.2.2";
@@ -441,7 +443,7 @@ export default function Page() {
             <IconInstagram size={16} />
           </a>
           <a
-            href={LINKS.downloadFolder}
+            href={LINKS.downloadDirect}
             target="_blank"
             rel="noopener noreferrer"
             className="btn-pill btn-pill-primary"
@@ -481,7 +483,7 @@ export default function Page() {
           </p>
           <div className="hero-ctas">
             <a
-              href={LINKS.downloadFolder}
+              href={LINKS.downloadDirect}
               target="_blank"
               rel="noopener noreferrer"
               className="btn-pill btn-pill-primary"
@@ -497,11 +499,11 @@ export default function Page() {
           <p className="cta-download-fallback">
             Download not starting?{" "}
             <a
-              href={LINKS.downloadFolder}
+              href={LINKS.downloadPreview}
               target="_blank"
               rel="noopener noreferrer"
             >
-              Open the Google Drive folder
+              Open the Google Drive file
             </a>
           </p>
           <div className="hero-points">
@@ -786,8 +788,8 @@ export default function Page() {
                 </a>
               </li>
               <li>
-                <a href={LINKS.downloadFolder} target="_blank" rel="noopener noreferrer">
-                  Google Drive Folder <IconExternal />
+                <a href={LINKS.downloadDirect} target="_blank" rel="noopener noreferrer">
+                  Download ZIP <IconExternal />
                 </a>
               </li>
               <li>
