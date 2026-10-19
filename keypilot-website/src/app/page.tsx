@@ -14,9 +14,9 @@ const LINKS = {
   hush: "https://hush.aqerionx.in/",
   // Direct ZIP download URL; preview link is kept as a fallback.
   downloadDirect:
-    "https://drive.google.com/uc?export=download&id=1GZRj6vPjUfPpFV8P-b4kWYQHTGOI0WTN",
+    "https://drive.google.com/uc?export=download&id=15Lu293brRSRbD7DxUsgLIS0QF74pSfog",
   downloadPreview:
-    "https://drive.google.com/file/d/1GZRj6vPjUfPpFV8P-b4kWYQHTGOI0WTN/view?usp=sharing",
+    "https://drive.google.com/file/d/15Lu293brRSRbD7DxUsgLIS0QF74pSfog/view?usp=sharing",
 } as const;
 
 const VERSION = "v2.2.6";
