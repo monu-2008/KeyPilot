@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "KeyPilot by AQERIONX",
-  "version": "2.2.3",
-  "description": "Keyboard navigation, adaptive Smart Dark Mode, and practice-only shortcuts on explicitly supported practice routes.",
+  "version": "2.2.4",
+  "description": "Keyboard navigation with route-independent question detection, adaptive Smart Dark Mode, and practice-only shortcuts on explicitly supported routes.",
   "permissions": [
     "activeTab",
     "scripting",
