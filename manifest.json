@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "KeyPilot by AQERIONX",
-  "version": "2.2.2",
-  "description": "Keyboard navigation plus adaptive Smart Dark Mode that darkens light surfaces while keeping text readable.",
+  "version": "2.2.3",
+  "description": "Keyboard navigation, adaptive Smart Dark Mode, and practice-only shortcuts on explicitly supported practice routes.",
   "permissions": [
     "activeTab",
     "scripting",
