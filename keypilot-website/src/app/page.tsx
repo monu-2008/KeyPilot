@@ -19,7 +19,7 @@ const LINKS = {
     "https://drive.google.com/file/d/1GZRj6vPjUfPpFV8P-b4kWYQHTGOI0WTN/view?usp=sharing",
 } as const;
 
-const VERSION = "v2.2.3";
+const VERSION = "v2.2.4";
 
 const NAV_LINKS = [
   { label: "Home", href: "#home" },
@@ -538,7 +538,7 @@ export default function Page() {
                   <div className="popup-mock-brand-sub">by AQERIONX</div>
                 </div>
               </div>
-              <span className="popup-mock-version">v2.2.3</span>
+              <span className="popup-mock-version">v2.2.4</span>
             </div>
             <div className="popup-mock-pills">
               <button className="popup-mock-pill active">Peach</button>
@@ -572,7 +572,7 @@ export default function Page() {
             </div>
             <div className="popup-mock-footer">
               <span className="popup-mock-footer-brand">AQERIONX</span>
-              · v2.2.3 · Manual submission, always
+              · v2.2.4 · Manual submission, always
             </div>
           </div>
         </div>
@@ -732,6 +732,7 @@ export default function Page() {
           <h3 className="changelog-version">{VERSION}</h3>
           <p className="changelog-meta">Implemented in code · not yet browser-tested by the maintainer</p>
           <ul className="changelog-list">
+            <li><span className="changelog-bullet" />Route-independent question detection now includes a generic fallback for pages using native radio inputs; Enter/Space submission remains limited to supported practice routes.</li>
             <li><span className="changelog-bullet" />Diagnostics now target the top-level CCBP page, avoiding third-party embedded frames; the named primitive-coding practice route is supported.</li>
             <li><span className="changelog-bullet" />Adaptive Dark Mode replaces full-page inversion with light-surface and text-color adjustments; all-sites access is requested only when enabled.</li>
             <li><span className="changelog-bullet" />Three premium themes (Peach Clay, Midnight, Lavender Glass Clay) with persistence.</li>
