@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "KeyPilot by AQERIONX",
-  "version": "2.2.5",
-  "description": "Adaptive quiz-option detection with runtime fallback recovery, adaptive Smart Dark Mode, and practice-only shortcuts on explicitly supported routes.",
+  "version": "2.2.6",
+  "description": "Adaptive quiz-option detection with runtime fallback recovery, persistent CCBP route support, adaptive Smart Dark Mode, and practice-only submit shortcuts.",
   "permissions": [
     "activeTab",
     "scripting",
@@ -21,6 +21,7 @@
     "service_worker": "background.js"
   },
   "optional_host_permissions": [
+    "https://learning.ccbp.in/*",
     "http://*/*",
     "https://*/*"
   ]
