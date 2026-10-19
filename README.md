@@ -1,4 +1,4 @@
-# KeyPilot by AQERIONX (Chrome MV3, v2.2.5)
+# KeyPilot by AQERIONX (Chrome MV3, v2.2.6)
 
 A minimal Manifest V3 Chrome extension that lets you pick quiz answer
 options with the keyboard keys `1`–`4`. It works on standard radio inputs,
@@ -40,6 +40,7 @@ deployment instructions.
 
 ## Table of contents
 
+1. [What changed in v2.2.6 (persistent CCBP navigation)](#what-changed-in-v226-persistent-ccbp-navigation)
 1. [What changed in v2.2.5 (adaptive DOM recovery)](#what-changed-in-v225-adaptive-dom-recovery)
 1. [What changed in v2.2.4 (route-independent question detection)](#what-changed-in-v224-route-independent-question-detection)
 1. [What changed in v2.2.3 (CCBP diagnostics + route fix)](#what-changed-in-v223-ccbp-diagnostics--route-fix)
@@ -72,6 +73,16 @@ deployment instructions.
 23. [Compatibility limitations (honest)](#compatibility-limitations-honest)
 24. [Privacy](#privacy)
 25. [Test status (v2.1.1)](#test-status-v211)
+---
+
+## What changed in v2.2.6 (persistent CCBP navigation)
+
+- Added an optional, narrow `https://learning.ccbp.in/*` permission that is requested when the user clicks Enable on CCBP. This allows KeyPilot to re-inject after full-page route navigation without asking for broad all-sites access.
+- The CCBP keyboard-navigation preference is saved locally. When enabled, the background service worker applies the content script to future CCBP page loads and restores enabled CCBP tabs after extension startup/update.
+- Disable on a CCBP tab turns off future route injection; Reset to defaults clears the saved persistence setting.
+- Runtime DOM recovery continues to try known selectors, native radios and generic ARIA/custom controls, and Diagnostics prints the detector path.
+- The source is syntax-checked; this persistent navigation behavior still needs testing in Chrome.
+
 ---
 
 ## What changed in v2.2.5 (adaptive DOM recovery)
@@ -290,7 +301,7 @@ fixes based on the DOM inspection report:
 
 ```
 quiz-keyboard-navigator/
-├── manifest.json               # MV3 manifest; activeTab + scripting + storage, optional all-sites access. v2.2.5
+├── manifest.json               # MV3 manifest; activeTab + scripting + storage, optional CCBP and all-sites access. v2.2.6
 ├── background.js               # Keeps Universal Dark Mode applied across tabs and navigations
 ├── dark-mode.css               # Reversible force-dark filter for supported web pages
 ├── content.js                  # Keyboard handler (1-4), practice-submit gate, option detection, indicator
@@ -1071,17 +1082,17 @@ Use this checklist to verify KeyPilot works end-to-end. Open `practice-quiz-port
 
 ---
 
-## Test status (v2.2.5)
+## Test status (v2.2.6)
 
-The v2.2.5 source changes have been committed to the public repository. JavaScript and the manifest have been syntax-checked, but **adaptive DOM recovery has not yet been verified against all live CCBP quiz layouts**. Do not treat the unchecked checklist as passed.
+The v2.2.6 source changes have been committed to the public repository. JavaScript and the manifest have been syntax-checked, but **persistent CCBP route injection and adaptive DOM recovery have not yet been verified against all live CCBP quiz layouts**. Do not treat the unchecked checklist as passed.
 
 ### Confirmed by source inspection
 
-- The manifest, popup diagnostics, content diagnostics and landing-page badge are set to v2.2.5.
+- The manifest, popup diagnostics, content diagnostics and landing-page badge are set to v2.2.6.
 - The GitHub footer constant points to
   `https://github.com/monu-2008/KeyPilot`.
 - Hush and Instagram links point to the configured AQERIONX destinations.
-- The practice-submit helper requires the setting to be enabled and accepts either the opted-in local fixture or one of the explicitly allowlisted CCBP practice routes; the 1–4 selection feature remains route-independent and includes adaptive custom-control fallback.
+- The practice-submit helper requires the setting to be enabled and accepts either the opted-in local fixture or one of the explicitly allowlisted CCBP practice routes; 1–4 selection has adaptive custom-control fallback, and Enable can persist across CCBP routes after narrow site permission is granted.
 - Submit-button discovery checks the enclosing question card when the
   detected container is the nested radio-options element.
 - The practice page now keeps the button labelled SUBMIT after option
@@ -1090,6 +1101,8 @@ The v2.2.5 source changes have been committed to the public repository. JavaScri
 ### Still needs browser testing
 
 - Load unpacked in Chrome and check the popup console for errors.
+- On `learning.ccbp.in`, click Enable and grant the narrow site permission; navigate to another CCBP quiz route and confirm the shortcut remains enabled.
+- Click Disable on a CCBP page and confirm future CCBP navigations no longer auto-enable KeyPilot.
 - Switch through Peach, Midnight, and Lavender and confirm theme persistence.
 - Enable/disable shortcuts and confirm keys 1–4 select the intended option.
 - Run Diagnostics and verify the question/option counts on the included
