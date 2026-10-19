@@ -1,5 +1,5 @@
 /**
- * KeyPilot by AQERIONX — content script (Manifest V3, v2.2.3)
+ * KeyPilot by AQERIONX — content script (Manifest V3, v2.2.4)
  *
  * WHAT THIS FILE DOES
  *   Listens for keys 1-4 and selects the matching answer option on the
@@ -76,7 +76,7 @@
   // 2. State + constants
   // =========================================================================
   const TAG = '[KeyPilot]';
-  const VERSION = '2.2.3';
+  const VERSION = '2.2.4';
 
   let enabled = true;
   let practiceSubmit = false;     // Enter-to-submit: ONLY honored on pages marked as practice
@@ -96,6 +96,7 @@
   const QUESTION_SELECTORS = [
     '[data-testid="radioGroupOptions"]',
     '[data-testid="card"]',
+    '[role="radiogroup"]',
     'fieldset',
     '[role="group"]',
     '[data-question]',
@@ -326,12 +327,70 @@
   //    containers exist.
   // =========================================================================
 
+  function getFallbackRadioQuestion() {
+    const radios = Array.from(document.querySelectorAll('input[type="radio"]'))
+      .filter(radio => {
+        if (radio.disabled || radio.getAttribute('aria-disabled') === 'true') return false;
+        const label = radio.closest('label');
+        return isVisible(radio) || (label && isVisible(label));
+      });
+    if (radios.length < 2) return null;
+
+    // Prefer explicit option/question containers, then group by the native
+    // radio name and form owner. This fallback is route-independent and only
+    // runs when the normal quiz container selectors find no options.
+    const groups = new Map();
+    const formIds = new WeakMap();
+    let nextFormId = 1;
+    const getFormId = form => {
+      if (!form) return 'no-form';
+      if (!formIds.has(form)) formIds.set(form, nextFormId++);
+      return formIds.get(form);
+    };
+
+    radios.forEach(radio => {
+      const explicitScope = radio.closest(
+        '[data-testid="radioGroupOptions"], [role="radiogroup"], fieldset, ' +
+        '[data-question], [data-question-id], .question, .quiz-question, [data-testid="card"]'
+      );
+      const key = explicitScope || (radio.name
+        ? `form:${getFormId(radio.form)}:name:${radio.name}`
+        : (radio.closest('form') || radio.parentElement || radio));
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(radio);
+    });
+
+    const fallbackCandidates = [];
+    for (const group of groups.values()) {
+      if (group.length < 2) continue;
+      let current = group[0].parentElement;
+      let best = null;
+      while (current && current !== document.documentElement) {
+        const count = current.querySelectorAll('input[type="radio"]').length;
+        if (count < group.length || !group.every(radio => current.contains(radio))) break;
+        if (count === group.length) best = current;
+        else break;
+        current = current.parentElement;
+      }
+      if (best) fallbackCandidates.push(best);
+    }
+
+    if (!fallbackCandidates.length) return null;
+    const viewportCenter = window.innerHeight / 2;
+    return fallbackCandidates.sort((a, b) => {
+      const ar = a.getBoundingClientRect();
+      const br = b.getBoundingClientRect();
+      return Math.abs(ar.top + ar.height / 2 - viewportCenter) -
+             Math.abs(br.top + br.height / 2 - viewportCenter);
+    })[0];
+  }
+
   function getCurrentlyVisibleQuestion() {
     const allCandidates = Array.from(document.querySelectorAll(QUESTION_SELECTORS));
 
     // Restrict to candidates that have at least one option.
     const withOptions = allCandidates.filter(c => getOptionsForQuestion(c).length > 0);
-    if (withOptions.length === 0) return null;
+    if (withOptions.length === 0) return getFallbackRadioQuestion();
 
     // Filter out oversized containers (more than 2x viewport height) IF
     // we have smaller alternatives. This avoids picking a whole-page <form>.
