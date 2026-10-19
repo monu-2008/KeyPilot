@@ -1,4 +1,4 @@
-# KeyPilot by AQERIONX (Chrome MV3, v2.2.2)
+# KeyPilot by AQERIONX (Chrome MV3, v2.2.3)
 
 A minimal Manifest V3 Chrome extension that lets you pick quiz answer
 options with the keyboard keys `1`–`4`. It works on standard radio inputs,
@@ -40,6 +40,7 @@ deployment instructions.
 
 ## Table of contents
 
+1. [What changed in v2.2.3 (CCBP diagnostics + route fix)](#what-changed-in-v223-ccbp-diagnostics--route-fix)
 1. [What changed in v2.2.2 (Adaptive Dark Mode fix)](#what-changed-in-v222-adaptive-dark-mode-fix)
 1. [What changed in v2.2.1 (Smart Dark Mode)](#what-changed-in-v221-smart-dark-mode)
 1. [What changed in v2.2.0 (Universal Dark Mode)](#what-changed-in-v220-universal-dark-mode)
@@ -69,6 +70,15 @@ deployment instructions.
 23. [Compatibility limitations (honest)](#compatibility-limitations-honest)
 24. [Privacy](#privacy)
 25. [Test status (v2.1.1)](#test-status-v211)
+---
+
+## What changed in v2.2.3 (CCBP diagnostics + route fix)
+
+- Popup commands and Diagnostics now explicitly target the top-level tab frame, rather than a third-party embedded frame such as WebEngage's storage frame.
+- Manual content-script injection now targets the top-level page only; the script also exits early if injected inside an unrelated child frame.
+- Added the exact HTTPS route prefix `learning.ccbp.in/primitive-coding/practice/...` alongside `/default-question/practice/...` to the practice-only route allowlist. Other remote paths remain unauthorized.
+- Source syntax has been checked; verify question detection on the real CCBP practice page in Chrome.
+
 ---
 
 ## What changed in v2.2.2 (Adaptive Dark Mode fix)
@@ -102,7 +112,7 @@ deployment instructions.
 
 ## What changed in v2.1.2 (CCBP practice route + diagnostics)
 
-- Added a narrow allowlist for `https://learning.ccbp.in/default-question/practice/...`; the Enter / Space setting must still be enabled and other remote routes remain blocked.
+- Added a narrow allowlist for the explicit CCBP `/default-question/practice/...` route; the Enter / Space setting must still be enabled and other remote routes remain blocked. The `/primitive-coding/practice/...` route was added separately in v2.2.3.
 - Extended diagnostics to report whether an answer is selected and the detected Submit button label.
 - Updated extension, popup, and manifest version to `2.1.2`.
 - Browser end-to-end testing has not yet been run after this commit.
@@ -257,7 +267,7 @@ fixes based on the DOM inspection report:
 
 ```
 quiz-keyboard-navigator/
-├── manifest.json               # MV3 manifest; activeTab + scripting + storage, optional all-sites access. v2.2.2
+├── manifest.json               # MV3 manifest; activeTab + scripting + storage, optional all-sites access. v2.2.3
 ├── background.js               # Keeps Universal Dark Mode applied across tabs and navigations
 ├── dark-mode.css               # Reversible force-dark filter for supported web pages
 ├── content.js                  # Keyboard handler (1-4), practice-submit gate, option detection, indicator
@@ -477,7 +487,7 @@ KeyPilot can optionally activate the visible **Submit** button with `Enter` or `
 **The setting must be enabled, and the page must be one of these supported practice environments:**
 
 1. A local fixture with `<html data-keypilot-practice="true">` opened via `file:` or localhost.
-2. The explicit HTTPS route `learning.ccbp.in/default-question/practice/...`.
+2. The explicit HTTPS routes `learning.ccbp.in/default-question/practice/...` and `learning.ccbp.in/primitive-coding/practice/...`.
 
 Other remote origins and other CCBP routes remain unauthorized. The URL allowlist is not proof that a quiz is ungraded; use this shortcut only on ungraded practice.
 
@@ -847,7 +857,7 @@ This extension works on:
 - ✅ Portal DOM with `[data-testid="card"]` + `[data-testid="radioGroupOptions"]`
   + `label.radioButtonLabel` + `[class*="BaseRadioButtonWrapper"]`
   (based on reported findings — verify on the real portal).
-- ✅ Same-origin iframes (the script is injected with `allFrames: true`).
+- ✅ The popup and diagnostics target the top-level page frame; unrelated third-party iframes are skipped.
 - ✅ Single-page applications (the script listens on `document`, which
   survives client-side route changes within the same tab).
 - ✅ Dynamically rendered questions (the script queries the DOM on every
@@ -1038,17 +1048,17 @@ Use this checklist to verify KeyPilot works end-to-end. Open `practice-quiz-port
 
 ---
 
-## Test status (v2.2.2)
+## Test status (v2.2.3)
 
-The v2.2.2 source changes have been committed to the public repository. JavaScript and the manifest have been syntax-checked, but **the adaptive dark-mode rendering has not yet been tested in Chrome after this change**. Do not treat the unchecked checklist as passed.
+The v2.2.3 source changes have been committed to the public repository. JavaScript and the manifest have been syntax-checked, but **top-frame diagnostics and the expanded practice route have not yet been tested in Chrome after this change**. Do not treat the unchecked checklist as passed.
 
 ### Confirmed by source inspection
 
-- The manifest, popup diagnostics, content diagnostics and landing-page badge are set to v2.2.2.
+- The manifest, popup diagnostics, content diagnostics and landing-page badge are set to v2.2.3.
 - The GitHub footer constant points to
   `https://github.com/monu-2008/KeyPilot`.
 - Hush and Instagram links point to the configured AQERIONX destinations.
-- The practice-submit helper requires the setting to be enabled and accepts either the opted-in local fixture or the explicit CCBP practice route.
+- The practice-submit helper requires the setting to be enabled and accepts either the opted-in local fixture or one of the explicitly allowlisted CCBP practice routes.
 - Submit-button discovery checks the enclosing question card when the
   detected container is the nested radio-options element.
 - The practice page now keeps the button labelled SUBMIT after option
@@ -1061,7 +1071,7 @@ The v2.2.2 source changes have been committed to the public repository. JavaScri
 - Enable/disable shortcuts and confirm keys 1–4 select the intended option.
 - Run Diagnostics and verify the question/option counts on the included
   practice page.
-- Test Enter and Space on the local fixture and the ungraded CCBP practice route with the setting enabled; ensure they activate Submit once, never Next.
+- Test diagnostics on CCBP and confirm the report URL matches the tab URL, with the actual question and options detected. Test Enter and Space only on an ungraded practice route with the setting enabled; ensure they activate Submit once, never Next.
 - Click Hush, Instagram, and GitHub links and confirm their destinations.
 - Verify the real quiz page selectors only in a permitted test context;
   the reported DOM has not been independently validated against a live graded
