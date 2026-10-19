@@ -1,4 +1,4 @@
-# KeyPilot by AQERIONX (Chrome MV3, v2.2.3)
+# KeyPilot by AQERIONX (Chrome MV3, v2.2.4)
 
 A minimal Manifest V3 Chrome extension that lets you pick quiz answer
 options with the keyboard keys `1`–`4`. It works on standard radio inputs,
@@ -40,6 +40,7 @@ deployment instructions.
 
 ## Table of contents
 
+1. [What changed in v2.2.4 (route-independent question detection)](#what-changed-in-v224-route-independent-question-detection)
 1. [What changed in v2.2.3 (CCBP diagnostics + route fix)](#what-changed-in-v223-ccbp-diagnostics--route-fix)
 1. [What changed in v2.2.2 (Adaptive Dark Mode fix)](#what-changed-in-v222-adaptive-dark-mode-fix)
 1. [What changed in v2.2.1 (Smart Dark Mode)](#what-changed-in-v221-smart-dark-mode)
@@ -70,6 +71,16 @@ deployment instructions.
 23. [Compatibility limitations (honest)](#compatibility-limitations-honest)
 24. [Privacy](#privacy)
 25. [Test status (v2.1.1)](#test-status-v211)
+---
+
+## What changed in v2.2.4 (route-independent question detection)
+
+- Added an extra generic question-container selector for `[role="radiogroup"]`.
+- Added a route-independent fallback for pages that use native radio inputs but none of the known question container selectors. The fallback groups visible radios by explicit group/question containers or their native form/name.
+- The 1–4 selection feature does not depend on the URL path; on any CCBP route it can work when the DOM exposes a supported question/options pattern.
+- Enter/Space submission remains limited to explicitly allowlisted practice routes; this was not broadened to every CCBP route.
+- Syntax has been checked; live CCBP layouts still need to be checked with Diagnostics.
+
 ---
 
 ## What changed in v2.2.3 (CCBP diagnostics + route fix)
@@ -267,7 +278,7 @@ fixes based on the DOM inspection report:
 
 ```
 quiz-keyboard-navigator/
-├── manifest.json               # MV3 manifest; activeTab + scripting + storage, optional all-sites access. v2.2.3
+├── manifest.json               # MV3 manifest; activeTab + scripting + storage, optional all-sites access. v2.2.4
 ├── background.js               # Keeps Universal Dark Mode applied across tabs and navigations
 ├── dark-mode.css               # Reversible force-dark filter for supported web pages
 ├── content.js                  # Keyboard handler (1-4), practice-submit gate, option detection, indicator
@@ -1048,17 +1059,17 @@ Use this checklist to verify KeyPilot works end-to-end. Open `practice-quiz-port
 
 ---
 
-## Test status (v2.2.3)
+## Test status (v2.2.4)
 
-The v2.2.3 source changes have been committed to the public repository. JavaScript and the manifest have been syntax-checked, but **top-frame diagnostics and the expanded practice route have not yet been tested in Chrome after this change**. Do not treat the unchecked checklist as passed.
+The v2.2.4 source changes have been committed to the public repository. JavaScript and the manifest have been syntax-checked, but **route-independent question detection has not yet been verified against all live CCBP quiz layouts**. Do not treat the unchecked checklist as passed.
 
 ### Confirmed by source inspection
 
-- The manifest, popup diagnostics, content diagnostics and landing-page badge are set to v2.2.3.
+- The manifest, popup diagnostics, content diagnostics and landing-page badge are set to v2.2.4.
 - The GitHub footer constant points to
   `https://github.com/monu-2008/KeyPilot`.
 - Hush and Instagram links point to the configured AQERIONX destinations.
-- The practice-submit helper requires the setting to be enabled and accepts either the opted-in local fixture or one of the explicitly allowlisted CCBP practice routes.
+- The practice-submit helper requires the setting to be enabled and accepts either the opted-in local fixture or one of the explicitly allowlisted CCBP practice routes; the 1–4 selection feature remains route-independent.
 - Submit-button discovery checks the enclosing question card when the
   detected container is the nested radio-options element.
 - The practice page now keeps the button labelled SUBMIT after option
@@ -1070,7 +1081,7 @@ The v2.2.3 source changes have been committed to the public repository. JavaScri
 - Switch through Peach, Midnight, and Lavender and confirm theme persistence.
 - Enable/disable shortcuts and confirm keys 1–4 select the intended option.
 - Run Diagnostics and verify the question/option counts on the included
-  practice page.
+  practice page and on each supported CCBP quiz layout.
 - Test diagnostics on CCBP and confirm the report URL matches the tab URL, with the actual question and options detected. Test Enter and Space only on an ungraded practice route with the setting enabled; ensure they activate Submit once, never Next.
 - Click Hush, Instagram, and GitHub links and confirm their destinations.
 - Verify the real quiz page selectors only in a permitted test context;
