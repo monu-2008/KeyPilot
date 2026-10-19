@@ -113,9 +113,9 @@ const LINKS = {
   hush:      "https://hush.aqerionx.in/",
   // Direct ZIP download URL; preview link is kept as a fallback.
   downloadDirect:
-    "https://drive.google.com/uc?export=download&id=1GZRj6vPjUfPpFV8P-b4kWYQHTGOI0WTN",
+    "https://drive.google.com/uc?export=download&id=15Lu293brRSRbD7DxUsgLIS0QF74pSfog",
   downloadPreview:
-    "https://drive.google.com/file/d/1GZRj6vPjUfPpFV8P-b4kWYQHTGOI0WTN/view?usp=sharing",
+    "https://drive.google.com/file/d/15Lu293brRSRbD7DxUsgLIS0QF74pSfog/view?usp=sharing",
 } as const;
 ```
 
@@ -209,7 +209,7 @@ Typography uses `clamp()` so it scales fluidly between mobile and desktop
 | 10 | **Horizontal overflow check at 360px: `scrollWidth - clientWidth === 0`** (no horizontal scroll). | ✅ Pass |
 | 11 | Mobile menu toggle visible (`display: flex`) at 360px width. | ✅ Pass |
 | 12 | FAQ accordion interaction: clicking the 2nd question closes the 1st and opens the 2nd (single-open behavior, `aria-expanded` toggles correctly). | ✅ Pass |
-| 13 | All external link `href`s verified via DOM inspection: GitHub → `https://github.com/monu-2008/KeyPilot`, Instagram → `https://www.instagram.com/aqerionx/`, Download → `https://drive.google.com/file/d/1GZRj6vPjUfPpFV8P-b4kWYQHTGOI0WTN/view?usp=sharing`, Hush → `https://hush.aqerionx.in/`. | ✅ Pass |
+| 13 | All external link `href`s verified via DOM inspection: GitHub → `https://github.com/monu-2008/KeyPilot`, Instagram → `https://www.instagram.com/aqerionx/`, Download → `https://drive.google.com/file/d/15Lu293brRSRbD7DxUsgLIS0QF74pSfog/view?usp=sharing`, Hush → `https://hush.aqerionx.in/`. | ✅ Pass |
 | 14 | Verify that the current Google Drive ZIP is accessible to public visitors without signing in. | Needs real-user verification | Open the Download ZIP link in a signed-out/private window; confirm the file is shared as “Anyone with the link” → Viewer. |
 | 15 | Scroll-to-top button appears after scrolling 600px and scrolls back to top on click. | ✅ Pass |
 | 16 | VLM visual verification (desktop 1440px): pill navbar ✓, large KeyPilot heading ✓, gradient "keyboard"/"workflow" ✓, popup preview with theme pills + 1–4 keys ✓. | ✅ Pass |
