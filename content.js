@@ -1,5 +1,5 @@
 /**
- * KeyPilot by AQERIONX — content script (Manifest V3, v2.2.5)
+ * KeyPilot by AQERIONX — content script (Manifest V3, v2.2.6)
  *
  * WHAT THIS FILE DOES
  *   Listens for keys 1-4 and selects the matching answer option on the
@@ -76,7 +76,7 @@
   // 2. State + constants
   // =========================================================================
   const TAG = '[KeyPilot]';
-  const VERSION = '2.2.5';
+  const VERSION = '2.2.6';
 
   let enabled = true;
   let practiceSubmit = false;     // Enter-to-submit: ONLY honored on pages marked as practice
