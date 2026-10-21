@@ -733,6 +733,9 @@ export default function Page() {
           <h3 className="changelog-version">{VERSION}</h3>
           <p className="changelog-meta">Implemented in code · not yet browser-tested by the maintainer</p>
           <ul className="changelog-list">
+            <li><span className="changelog-bullet" />Shift+Enter and Shift+Space can activate a forward control such as Next, Continue, or Skip; Previous and Back controls are excluded.</li>
+            <li><span className="changelog-bullet" />The popup shortcut cards, key badges, action buttons, and download/Hush cards use a more compact layout.</li>
+            <li><span className="changelog-bullet" />Download ZIP uses a stable GitHub Releases URL with the asset name KeyPilot.zip; the Drive preview remains a temporary fallback until the first release is published.</li>
             <li><span className="changelog-bullet" />When enabled on learning.ccbp.in, optional site permission lets KeyPilot stay active across CCBP route navigations; adaptive DOM fallback retries different option patterns.</li>
             <li><span className="changelog-bullet" />Adaptive DOM recovery can try native-radio and custom ARIA option fallbacks when a quiz layout differs; diagnostics reports which detector path was used.</li>
             <li><span className="changelog-bullet" />Question detection uses known selectors plus native-radio and custom ARIA fallbacks. Keyboard selection depends on a supported page structure.</li>
