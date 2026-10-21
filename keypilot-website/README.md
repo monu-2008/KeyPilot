@@ -7,7 +7,10 @@ claymorphism + neomorphism + glossy glass bubbles.
 > ⚠️ **This is the marketing site for KeyPilot, not the extension itself.**
 > The Chrome extension source lives at
 > [github.com/monu-2008/KeyPilot](https://github.com/monu-2008/KeyPilot).
-> This page links to the extension's Google Drive ZIP for download.
+> The main download button uses the stable GitHub Releases asset URL:
+> `https://github.com/monu-2008/KeyPilot/releases/latest/download/KeyPilot.zip`.
+> A Drive preview is retained as a temporary fallback until the first GitHub
+> Release has been published.
 
 ---
 
