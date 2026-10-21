@@ -26,9 +26,9 @@ jobs:
         id: package
         shell: bash
         env:
-          EVENT_NAME: \${{ github.event_name }}
-          INPUT_VERSION: \${{ inputs.version }}
-          REF_NAME: \${{ github.ref_name }}
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_VERSION: ${{ inputs.version }}
+          REF_NAME: ${{ github.ref_name }}
         run: |
           set -euo pipefail
 
@@ -42,7 +42,7 @@ jobs:
             RELEASE_TAG="$REF_NAME"
           fi
 
-          RELEASE_VERSION="\${RELEASE_TAG#v}"
+          RELEASE_VERSION="${RELEASE_TAG#v}"
           MANIFEST_VERSION="$(node -p "require('./manifest.json').version")"
           if [[ "$RELEASE_VERSION" != "$MANIFEST_VERSION" ]]; then
             echo "Tag version ($RELEASE_VERSION) does not match manifest.json ($MANIFEST_VERSION)." >&2
@@ -64,9 +64,9 @@ jobs:
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: \${{ steps.package.outputs.tag }}
-          target_commitish: \${{ github.sha }}
-          name: KeyPilot \${{ steps.package.outputs.tag }}
+          tag_name: ${{ steps.package.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          name: KeyPilot ${{ steps.package.outputs.tag }}
           generate_release_notes: true
           files: KeyPilot.zip
           overwrite_files: true
