@@ -124,8 +124,8 @@ const LINKS = {
 
 The **Download ZIP** buttons (navbar, hero, and footer) use the stable GitHub Releases URL:
 `https://github.com/monu-2008/KeyPilot/releases/latest/download/KeyPilot.zip`.
-The hero keeps a Google Drive preview link as a temporary fallback until the
-first GitHub Release has been published.
+The hero keeps a Google Drive backup link for emergencies; that backup may be
+older than the latest GitHub Release, so the stable GitHub URL is authoritative.
 
 > **For the site owner:** publish the first package once from GitHub Actions →
 > **Publish KeyPilot ZIP** → **Run workflow** with version `2.2.12`. After the
@@ -213,7 +213,7 @@ Typography uses `clamp()` so it scales fluidly between mobile and desktop
 | 10 | **Horizontal overflow check at 360px: `scrollWidth - clientWidth === 0`** (no horizontal scroll). | ✅ Pass |
 | 11 | Mobile menu toggle visible (`display: flex`) at 360px width. | ✅ Pass |
 | 12 | FAQ accordion interaction: clicking the 2nd question closes the 1st and opens the 2nd (single-open behavior, `aria-expanded` toggles correctly). | ✅ Pass |
-| 13 | All external link `href`s verified via DOM inspection: GitHub → `https://github.com/monu-2008/KeyPilot`, Instagram → `https://www.instagram.com/aqerionx/`, Download → `https://github.com/monu-2008/KeyPilot/releases/latest/download/KeyPilot.zip` (stable release asset); Drive is retained as a fallback., Hush → `https://hush.aqerionx.in/`. | ✅ Pass |
+| 13 | All external link `href`s verified via DOM inspection: GitHub → `https://github.com/monu-2008/KeyPilot`, Instagram → `https://www.instagram.com/aqerionx/`, Download → `https://github.com/monu-2008/KeyPilot/releases/latest/download/KeyPilot.zip` (stable release asset); Drive is retained as a backup and may lag behind the latest release., Hush → `https://hush.aqerionx.in/`. | ✅ Pass |
 | 14 | Verify that the current Google Drive ZIP is accessible to public visitors without signing in. | Needs real-user verification | Open the Download ZIP link in a signed-out/private window; confirm the file is shared as “Anyone with the link” → Viewer. |
 | 15 | Scroll-to-top button appears after scrolling 600px and scrolls back to top on click. | ✅ Pass |
 | 16 | VLM visual verification (desktop 1440px): pill navbar ✓, large KeyPilot heading ✓, gradient "keyboard"/"workflow" ✓, popup preview with theme pills + 1–4 keys ✓. | ✅ Pass |
