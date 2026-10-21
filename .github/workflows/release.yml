@@ -1,0 +1,73 @@
+name: Publish KeyPilot ZIP
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Manifest version to publish (without the leading v)"
+        required: true
+        default: "2.2.12"
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Validate version and package extension
+        id: package
+        shell: bash
+        env:
+          EVENT_NAME: \${{ github.event_name }}
+          INPUT_VERSION: \${{ inputs.version }}
+          REF_NAME: \${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            if [[ ! "$INPUT_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "Version must use MAJOR.MINOR.PATCH format, e.g. 2.2.12." >&2
+              exit 1
+            fi
+            RELEASE_TAG="v$INPUT_VERSION"
+          else
+            RELEASE_TAG="$REF_NAME"
+          fi
+
+          RELEASE_VERSION="\${RELEASE_TAG#v}"
+          MANIFEST_VERSION="$(node -p "require('./manifest.json').version")"
+          if [[ "$RELEASE_VERSION" != "$MANIFEST_VERSION" ]]; then
+            echo "Tag version ($RELEASE_VERSION) does not match manifest.json ($MANIFEST_VERSION)." >&2
+            exit 1
+          fi
+
+          for path in manifest.json popup.html popup.css popup.js background.js content.js dark-mode.css icons; do
+            if [[ ! -e "$path" ]]; then
+              echo "Required extension path is missing: $path" >&2
+              exit 1
+            fi
+          done
+
+          zip -r KeyPilot.zip manifest.json popup.html popup.css popup.js background.js content.js dark-mode.css icons
+          unzip -t KeyPilot.zip
+
+          echo "tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: \${{ steps.package.outputs.tag }}
+          target_commitish: \${{ github.sha }}
+          name: KeyPilot \${{ steps.package.outputs.tag }}
+          generate_release_notes: true
+          files: KeyPilot.zip
+          overwrite_files: true
+          fail_on_unmatched_files: true
