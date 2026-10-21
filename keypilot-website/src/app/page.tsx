@@ -12,14 +12,15 @@ const LINKS = {
   github: "https://github.com/monu-2008/KeyPilot",
   instagram: "https://www.instagram.com/aqerionx/",
   hush: "https://hush.aqerionx.in/",
-  // Direct ZIP download URL; preview link is kept as a fallback.
+  // Stable download URL: the release workflow always uploads the asset as KeyPilot.zip.
+  // The Drive preview remains a temporary fallback until the first GitHub Release is published.
   downloadDirect:
-    "https://drive.google.com/uc?export=download&id=15Lu293brRSRbD7DxUsgLIS0QF74pSfog",
+    "https://github.com/monu-2008/KeyPilot/releases/latest/download/KeyPilot.zip",
   downloadPreview:
     "https://drive.google.com/file/d/15Lu293brRSRbD7DxUsgLIS0QF74pSfog/view?usp=sharing",
 } as const;
 
-const VERSION = "v2.2.6";
+const VERSION = "v2.2.12";
 
 const NAV_LINKS = [
   { label: "Home", href: "#home" },
