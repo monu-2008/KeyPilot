@@ -488,6 +488,14 @@ body {
   line-height: 1;
 }
 
+/* Keep the two modifier shortcuts inside their compact grid cells. */
+.shortcut-card:nth-child(7) .key,
+.shortcut-card:nth-child(8) .key {
+  font-size: 10px;
+  padding-inline: 3px;
+  letter-spacing: -0.04em;
+}
+
 .key-desc {
   font-size: 9.5px;
   font-weight: 500;
