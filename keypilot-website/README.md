@@ -213,8 +213,8 @@ Typography uses `clamp()` so it scales fluidly between mobile and desktop
 | 10 | **Horizontal overflow check at 360px: `scrollWidth - clientWidth === 0`** (no horizontal scroll). | ✅ Pass |
 | 11 | Mobile menu toggle visible (`display: flex`) at 360px width. | ✅ Pass |
 | 12 | FAQ accordion interaction: clicking the 2nd question closes the 1st and opens the 2nd (single-open behavior, `aria-expanded` toggles correctly). | ✅ Pass |
-| 13 | Source is configured to use GitHub Releases for the stable ZIP link, with the Google Drive URL retained as a backup. | Source checked; live click test pending | Verify after the first GitHub Release is published. |
-| 14 | Verify the stable GitHub download URL returns `KeyPilot.zip` after the first release, and the Drive backup is publicly accessible if needed. | Needs real-user verification | Run the Publish KeyPilot ZIP workflow once, then test the stable URL in a signed-out/private window. Check the Drive backup sharing separately if it is used. |
+| 13 | Source is configured to use GitHub Releases for the stable ZIP link, with the Google Drive URL retained as a backup. | Source checked; live click test pending until the first GitHub Release is published. |
+| 14 | Verify the stable GitHub download URL returns `KeyPilot.zip` after the first release, and the Drive backup is publicly accessible if needed. | Needs real-user verification; run the release workflow once, then test the stable URL in a private window. |
 | 15 | Scroll-to-top button appears after scrolling 600px and scrolls back to top on click. | ✅ Pass |
 | 16 | VLM visual verification (desktop 1440px): pill navbar ✓, large KeyPilot heading ✓, gradient "keyboard"/"workflow" ✓, popup preview with theme pills + 1–4 keys ✓. | ✅ Pass |
 | 17 | VLM visual verification (full page 1440px): glossy pastel bubbles ✓, four install step cards ✓, FAQ section with expanded accordion ✓. | ✅ Pass |
