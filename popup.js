@@ -1,5 +1,5 @@
 /**
- * KeyPilot by AQERIONX — popup script (Manifest V3, v2.2.6)
+ * KeyPilot by AQERIONX — popup script (Manifest V3, v2.2.12)
  *
  * Responsibilities:
  *   - Three-theme management: peach (default) / midnight / lavender,
@@ -7,12 +7,16 @@
  *     Pill selector in navbar + <select> in Settings both control the same
  *     preference and stay in sync.
  *   - Settings panel: theme select, reduced-motion, Enter/Space-to-submit
- *     (practice mode only), and all-sites Universal Dark Mode. All persisted.
+ *     (works on every website when enabled; Shift+Enter goes to next
+ *     question on every website), and all-sites Universal Dark Mode.
+ *     All persisted.
  *   - Inject content.js into the active tab's top-level frame only.
  *   - Send enable/disable + setPracticeSubmit messages to content script.
  *   - Real-checks Diagnostics with loading/success/warn/error states and
  *     Copy Debug Report button.
  *   - Explore AQERIONX footer:
+ *       * "Download Latest Update" card opens KEYPILOT_DOWNLOAD_URL
+ *         (https://keypilot.aqerionx.in/) via chrome.tabs.create.
  *       * Hush product card opens HUSH_URL via chrome.tabs.create.
  *       * Instagram pill opens INSTAGRAM_PROFILE_URL (official:
  *         https://www.instagram.com/aqerionx/) via chrome.tabs.create.
@@ -29,7 +33,7 @@
 'use strict';
 
 const TAG = '[KeyPilot]';
-const VERSION = '2.2.6';
+const VERSION = '2.2.12';
 
 // =========================================================================
 // CONFIGURATION — EXTERNAL LINKS
@@ -54,6 +58,13 @@ const INSTAGRAM_PROFILE_URL = 'https://www.instagram.com/aqerionx/';
  * The GitHub pill opens this exact repository in a new tab.
  */
 const GITHUB_REPOSITORY_URL = 'https://github.com/monu-2008/KeyPilot';
+
+/**
+ * Official KeyPilot website — latest update download page.
+ * Opens in a new tab via chrome.tabs.create when the
+ * "Download Latest Update" card is clicked.
+ */
+const KEYPILOT_DOWNLOAD_URL = 'https://keypilot.aqerionx.in/';
 // Storage keys (all under chrome.storage.local)
 const THEME_KEY           = 'keypilot.theme';            // 'peach' | 'midnight' | 'lavender'
 const REDUCED_MOTION_KEY  = 'keypilot.reducedMotion';    // boolean
@@ -100,6 +111,7 @@ const STATUS_SUB      = document.getElementById('statusSub');
 const HUSH_CARD       = document.getElementById('hushCard');
 const INSTAGRAM_LINK  = document.getElementById('instagramLink');
 const GITHUB_LINK     = document.getElementById('githubLink');
+const DOWNLOAD_CARD   = document.getElementById('downloadUpdateCard');
 
 const BLOCKED_SCHEMES = new Set([
   'chrome:', 'chrome-extension:', 'edge:', 'about:', 'view-source:', 'devtools:'
@@ -316,6 +328,12 @@ function openExternal(url) {
 HUSH_CARD.addEventListener('click', (e) => {
   e.preventDefault();
   openExternal(HUSH_URL);
+});
+
+// Download latest update card — always active (keypilot.aqerionx.in is configured)
+DOWNLOAD_CARD.addEventListener('click', (e) => {
+  e.preventDefault();
+  openExternal(KEYPILOT_DOWNLOAD_URL);
 });
 
 // Instagram pill — always active (official URL is configured)
@@ -687,6 +705,45 @@ chrome.tabs?.onUpdated?.addListener((tabId, changeInfo, _tab) => {
     });
   }
 });
+
+// =========================================================================
+// 10-SECOND LIVE RE-CHECK (added v2.2.12)
+// =========================================================================
+// The user asked the popup to keep re-checking the active tab every 10
+// seconds so the status card ("Enabled / Disabled / Submit-button found")
+// stays live while the popup is open. This is important on SPA quiz
+// portals where the question changes without a page navigation — the
+// popup must reflect the new question's submit/next button state without
+// requiring the user to close and reopen the popup.
+//
+// The interval is created once at popup open and cleared on
+// window.unload (popup closes). It does NOT poll when the popup is closed,
+// so it costs zero CPU/battery when not in use. The poll itself is a single
+// lightweight `chrome.tabs.sendMessage` round-trip per 10 s.
+let liveCheckInterval = null;
+const LIVE_CHECK_MS = 10_000;
+
+function startLiveCheck() {
+  if (liveCheckInterval) return; // already running
+  // Kick one immediately so the user sees fresh state right away, then
+  // repeat every 10 s while the popup stays open.
+  refresh();
+  liveCheckInterval = setInterval(refresh, LIVE_CHECK_MS);
+  log(`Live re-check started (every ${LIVE_CHECK_MS / 1000}s).`);
+}
+
+function stopLiveCheck() {
+  if (liveCheckInterval) {
+    clearInterval(liveCheckInterval);
+    liveCheckInterval = null;
+    log('Live re-check stopped (popup closing).');
+  }
+}
+
+// Start the 10-second loop as soon as initial setup completes.
+startLiveCheck();
+// Stop it when the popup window closes so we don't leak an interval.
+window.addEventListener('unload', stopLiveCheck, { once: true });
 
 chrome.storage?.onChanged?.addListener((changes, area) => {
   if (area !== 'local') return;

@@ -1,5 +1,5 @@
 /**
- * KeyPilot by AQERIONX — content script (Manifest V3, v2.2.6)
+ * KeyPilot by AQERIONX — content script (Manifest V3, v2.2.12)
  *
  * WHAT THIS FILE DOES
  *   Listens for keys 1-4 and selects the matching answer option on the
@@ -13,14 +13,18 @@
  *     - portal-specific testid-based containers ([data-testid="card"],
  *       [data-testid="radioGroupOptions"])
  *
- *   Optionally listens for Enter OR Space to click the Submit button — only
- *   when the setting is enabled and the page passes the explicit practice
- *   authorization check (local opt-in fixture or the allowlisted CCBP practice route).
- *   Other remote origins and portal paths remain unauthorized. Use this shortcut
- *   only for ungraded practice; never to bypass assessment or proctoring controls.
- *   Additionally: never activates Next as a side effect, never clicks disabled
- *   buttons, requires an answer to be selected (when options exist), and debounces
- *   Enter+Space so both can't fire for the same question.
+ *   Optionally listens for Enter OR Space to click the Submit button — when
+ *   the user enables the "Enter / Space to submit" toggle in the popup. As of
+ *   v2.2.8 this works on EVERY http(s)/file website, not just CCBP practice
+ *   routes. As of v2.2.12, Shift+Enter / Shift+Space click the Next / Continue /
+ *   Skip button (forward navigation only — never Previous / Back). It is a
+ *   keyboard shortcut for a click the user could perform manually; it does not
+ *   read, reveal, or upload answer content, and does not bypass any proctoring
+ *   or attempt-limit control.
+ *   Additionally: never activates Next as a side effect of plain Enter, never
+ *   activates Previous / Back via Shift+Enter, never clicks disabled buttons,
+ *   requires an answer to be selected for plain Enter (when options exist),
+ *   and debounces Enter+Space so both can't fire for the same question.
  *
  * PORTAL-SPECIFIC SELECTORS (reported DOM)
  *   Based on the supplied DOM inspection report:
@@ -34,8 +38,6 @@
  *   between builds.
  *
  * WHAT IT DOES NOT DO
- *   - Auto-submit on live graded or monitored quizzes (Enter-to-submit is
- *     hard-gated to practice pages).
  *   - Touch timers, attempts, sessions, or proctoring.
  *   - Read or upload answer content.
  *   - Hide itself or spoof user activity.
@@ -76,10 +78,10 @@
   // 2. State + constants
   // =========================================================================
   const TAG = '[KeyPilot]';
-  const VERSION = '2.2.6';
+  const VERSION = '2.2.12';
 
   let enabled = true;
-  let practiceSubmit = false;     // Enter-to-submit: ONLY honored on pages marked as practice
+  let practiceSubmit = false;     // Enter-to-submit toggle (honored on any http/https/file page when ON)
   let indicatorEl = null;
   let indicatorTimer = null;
   let lastSelectedKey = null;        // debounces identical repeat keydown
@@ -142,6 +144,38 @@
 
   const INDICATOR_ID = '__quiz_kb_nav_indicator__';
   const INDICATOR_TTL_MS = 1800;
+
+  // ── Question cache (v2.2.12) ────────────────────────────────────────────
+  // Caches the currently-visible question + its detection strategy + its
+  // options for a short TTL so rapid 1-4 keypresses don't re-scan the whole
+  // DOM each time. Invalidated after submit/next clicks and on navigation.
+  const QUESTION_CACHE_TTL = 600; // ms — short enough to stay fresh on SPAs,
+                                  // long enough to cover a rapid keypress burst
+  let _cachedQuestion = null;
+  let _cachedStrategy = 'not-run';
+  let _cachedAt = 0;
+  let _cachedOptionsForQuestion = null;
+
+  function _setQuestionCache(el, strategy) {
+    _cachedQuestion = el;
+    _cachedStrategy = strategy;
+    _cachedAt = Date.now();
+  }
+  function _invalidateQuestionCache() {
+    _cachedQuestion = null;
+    _cachedOptionsForQuestion = null;
+    _cachedStrategy = 'not-run';
+    _cachedAt = 0;
+  }
+
+  // Invalidate cache on SPA navigation (URL change without full reload).
+  let _lastUrl = location.href;
+  setInterval(() => {
+    if (location.href !== _lastUrl) {
+      _lastUrl = location.href;
+      _invalidateQuestionCache();
+    }
+  }, 1000);
 
   // =========================================================================
   // 3. Logging — every diagnostic goes through here so it's easy to grep
@@ -301,11 +335,21 @@
   function getOptionsForQuestion(questionEl) {
     if (!questionEl) return [];
 
+    // Fast path: if this is the cached question and we have cached options,
+    // return them. This makes the 2nd+ keypress in a burst nearly free.
+    if (questionEl === _cachedQuestion && _cachedOptionsForQuestion &&
+        (Date.now() - _cachedAt) < QUESTION_CACHE_TTL) {
+      return _cachedOptionsForQuestion;
+    }
+    const isCachedQ = (questionEl === _cachedQuestion);
+
     // Prefer real radios where available, including hidden radios paired with
     // visible labels. This avoids double-counting wrappers around native inputs.
     const radios = Array.from(questionEl.querySelectorAll('input[type="radio"]'));
     if (radios.length > 0) {
-      return radios.map(radio => buildRadioOption(radio, questionEl));
+      const result = radios.map(radio => buildRadioOption(radio, questionEl));
+      if (isCachedQ) _cachedOptionsForQuestion = result;
+      return result;
     }
 
     // Runtime-adaptive custom controls. Prefer semantic answer nodes (ARIA roles,
@@ -340,12 +384,14 @@
       if (!overlaps) deduped.push(el);
     }
 
-    return deduped
+    const result = deduped
       .sort((a, b) => {
         if (a === b) return 0;
         return a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
       })
       .map(buildCustomOption);
+    if (isCachedQ) _cachedOptionsForQuestion = result;
+    return result;
   }
 
   // =========================================================================
@@ -460,6 +506,21 @@
   }
 
   function getCurrentlyVisibleQuestion() {
+    // ── Fast path: short-lived cache (added v2.2.12) ───────────────────────
+    // On large SPA quiz pages, the full DOM scan below can take 50–200ms per
+    // call because CUSTOM_OPTION_SELECTORS includes [aria-checked] which
+    // matches hundreds of elements on React pages. When the user presses
+    // 1-4 rapidly, each keypress re-scans. This cache returns the previously
+    // found question if it's still connected and within TTL, so only the
+    // FIRST keypress in a burst pays the scan cost. The cache is invalidated
+    // after submit/next clicks (question likely changes) and on URL change.
+    const now = Date.now();
+    if (_cachedQuestion && _cachedQuestion.isConnected &&
+        (now - _cachedAt) < QUESTION_CACHE_TTL) {
+      lastDetectionStrategy = _cachedStrategy;
+      return _cachedQuestion;
+    }
+
     const allCandidates = Array.from(document.querySelectorAll(QUESTION_SELECTORS));
 
     // Start with known semantic selectors on every key press. This runs against
@@ -485,22 +546,26 @@
         }
       }
       lastDetectionStrategy = 'known-selectors';
+      _setQuestionCache(best, 'known-selectors');
       return best;
     }
 
     const radioFallback = getFallbackRadioQuestion();
     if (radioFallback) {
       lastDetectionStrategy = 'native-radio-fallback';
+      _setQuestionCache(radioFallback, 'native-radio-fallback');
       return radioFallback;
     }
 
     const customFallback = getFallbackCustomQuestion();
     if (customFallback) {
       lastDetectionStrategy = 'custom-option-fallback';
+      _setQuestionCache(customFallback, 'custom-option-fallback');
       return customFallback;
     }
 
     lastDetectionStrategy = 'no-matching-question';
+    _invalidateQuestionCache();
     return null;
   }
 
@@ -646,47 +711,137 @@
   // =========================================================================
 
   /**
-   * Is this an explicitly supported practice page for Enter/Space-to-submit?
+   * Is Enter/Space-to-submit authorized on the current page?
    *
-   * The user must enable the setting. Then either:
-   *   1. A local fixture opts in with data-keypilot-practice="true", or
-   *   2. The URL matches an explicitly supported CCBP practice route on its exact HTTPS host.
+   * As of v2.2.12 the feature is enabled on EVERY website — not just CCBP
+   * practice routes. The only gate is the user's "Enter / Space to submit"
+   * toggle in the popup. When that toggle is ON, Enter/Space will look for a
+   * Submit/Check/Verify button on the current question and click it, on any
+   * http(s)/file page.
    *
-   * Other portal routes and other remote origins remain unauthorized.
+   * The remaining safety guards in handleSubmitKey() are preserved:
+   *   - ignored while typing in a text field / contenteditable
+   *   - ignored with Ctrl/Cmd/Alt held
+   *   - requires an answer to be selected (when options exist)
+   *   - never activates a "Next"-only button
+   *   - never clicks a disabled button
+   *   - debounces Enter+Space so both can't fire for the same question
+   *
+   * Note: this is a keyboard shortcut for a click the user could perform
+   * manually. It does not read, reveal, or upload answer content, and does
+   * not bypass any proctoring or attempt-limit control.
    */
   function isPracticePageAuthorized() {
     if (!practiceSubmit) return false;
-
-    const localPracticeOrigin =
-      location.protocol === 'file:' ||
-      (location.protocol === 'http:' &&
-        ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname));
-    const localOptIn =
-      document.documentElement.getAttribute('data-keypilot-practice') === 'true';
-
-    // Only explicitly named CCBP practice paths are eligible. Other remote
-    // routes, including assessment/course routes, remain unauthorized.
-    const ccbpPracticeRoute =
-      location.protocol === 'https:' &&
-      location.hostname === 'learning.ccbp.in' &&
-      /^\/(?:default-question|primitive-coding)\/practice(?:\/|$)/.test(location.pathname);
-
-    return ccbpPracticeRoute || (localPracticeOrigin && localOptIn);
+    // Only run on real document pages. Browser-internal pages
+    // (chrome://, about:, devtools:) are skipped because content scripts
+    // can't be injected there anyway, but file: and loopback hosts are
+    // explicitly allowed for local practice fixtures.
+    const p = location.protocol;
+    return p === 'http:' || p === 'https:' || p === 'file:';
   }
 
   /**
-   * Find a Submit/Check/Verify button inside the current question scope.
-   * If the detector returns the nested radio-options container, the enclosing
-   * question card is checked too. Buttons labelled Next/Continue are excluded.
+   * Read the "label text" of a button-shaped element from any of the common
+   * sources portals use: visible textContent, value (for input[type=submit]),
+   * aria-label, aria-labelledby (resolved), title, or data-testid. Returns a
+   * trimmed lower-case string (or '' if none).
+   *
+   * Why so many sources: many modern portals use ICON-ONLY submit buttons
+   * (just an SVG + aria-label) or styled <div role="button"> with a hidden
+   * <span>. Reading only textContent would miss those.
+   */
+  function getButtonLabel(btn) {
+    // 1. Visible text content (most common).
+    let text = (btn.textContent || '').trim();
+    // 2. <input type="submit"> uses .value, not textContent.
+    if (!text && 'value' in btn) text = (btn.value || '').trim();
+    // 3. aria-label is the standard accessible name for icon buttons.
+    if (!text) {
+      const al = btn.getAttribute('aria-label');
+      if (al) text = al.trim();
+    }
+    // 4. aria-labelledby points to one or more element ids whose text is the label.
+    if (!text) {
+      const labelledBy = btn.getAttribute('aria-labelledby');
+      if (labelledBy) {
+        text = labelledBy.trim().split(/\s+/)
+          .map(id => { const el = document.getElementById(id); return el ? (el.textContent || '').trim() : ''; })
+          .join(' ')
+          .trim();
+      }
+    }
+    // 5. title attribute is a tooltip but is often the only text on icon buttons.
+    if (!text) {
+      const t = btn.getAttribute('title');
+      if (t) text = t.trim();
+    }
+    // 6. data-testid is a last-resort hint (e.g. data-testid="submit-btn").
+    //    Only used when nothing else is available.
+    if (!text) {
+      const dt = btn.getAttribute('data-testid') || btn.getAttribute('data-test');
+      if (dt && /submit|check|verify/i.test(dt)) text = dt.trim();
+    }
+    return text.toLowerCase();
+  }
+
+  /**
+   * Is a button's label a "submit" action (not navigation)?
+   *
+   * Accepts: submit, submit answer, submit & next, submit quiz, check answer,
+   *          check, verify, icon buttons labelled "Submit" via aria-label.
+   * Rejects (exact match only, so multi-word labels still fall through):
+   *          next, next question, continue, skip, previous, prev, back,
+   *          cancel, close, finish, save, save & exit, exit.
+   *
+   * Why not "answer" / "grade" / "evaluate": those words are ambiguous.
+   * "Show Answer" / "Gradebook" / "Evaluate Quiz" are not submit buttons.
+   * The conservative submit|check|verify set covers every real submit label
+   * we've seen across CCBP, Quizlet, Kahoot-style portals and Google Forms.
+   */
+  function isSubmitLabel(text) {
+    if (!text) return false;
+    const t = text.trim().toLowerCase();
+    // Exact-match pure navigation labels — never treated as submit even
+    // if they happen to contain a stray word.
+    const pureNav =
+      /^(next|next question|continue|skip|skip question|previous|prev|back|cancel|close|finish|save|save & exit|save and exit|exit)$/;
+    if (pureNav.test(t)) return false;
+    // Any submit-like action word anywhere in the label.
+    return /\b(submit|check|verify)\b/.test(t);
+  }
+
+  /**
+   * Find a Submit/Check/Verify button for the current question.
+   *
+   * Strategy (in order, first visible match wins):
+   *   1. Search the question scope + known parent scopes (card, fieldset,
+   *      question container, form). This is the normal case where Submit
+   *      lives next to the options.
+   *   2. If nothing is found in-scope, fall back to a whole-document search
+   *      for the closest visible, enabled submit-labelled button. This
+   *      covers portals that render the Submit button in a page-level
+   *      toolbar, a sticky footer, or a modal — outside the question card.
+   *
+   * In BOTH passes we use the same getButtonLabel + isSubmitLabel checks so
+   * icon-only buttons (aria-label="Submit"), <input type=submit>, and
+   * multi-word labels ("Submit Answer", "Submit & Next", "Check Answer")
+   * all match, while "Next" / "Continue" / "Skip" / "Save" are excluded.
+   *
    * Returns null if no eligible button is found.
    */
   function findSubmitButton(questionEl) {
     if (!questionEl) return null;
 
-    // The detector may return the radioGroupOptions element, while Submit
-    // lives in its enclosing card. Search the smallest relevant question scope
-    // first, then a known parent scope. This routine is used only behind the
-    // practice-authorization gate above.
+    const SUBMIT_SELECTOR = 'button, [role="button"], input[type="submit"], [data-testid*="submit" i], [data-testid*="check" i]';
+
+    const isEligible = (btn) => {
+      if (!btn || btn.disabled) return false;
+      if (btn.getAttribute('aria-disabled') === 'true') return false;
+      return isSubmitLabel(getButtonLabel(btn));
+    };
+
+    // ---- Pass 1: question scope + known parent scopes ----------------------
     const scopes = [];
     const addScope = (el) => {
       if (el && !scopes.includes(el)) scopes.push(el);
@@ -696,21 +851,132 @@
     addScope(questionEl.closest('fieldset'));
     addScope(questionEl.closest('[data-question], [data-question-id], .question, .quiz-question'));
     addScope(questionEl.closest('form'));
+    addScope(questionEl.closest('[role="dialog"], [role="tabpanel"], [aria-modal="true"]'));
+    addScope(questionEl.closest('main, [role="main"], #root, body'));
 
     for (const scope of scopes) {
-      const candidates = Array.from(scope.querySelectorAll(
-        'button, [role="button"], input[type="submit"]'
-      )).filter(btn => {
-        if (btn.disabled || btn.getAttribute('aria-disabled') === 'true') return false;
-        const text = (btn.textContent || btn.value || '').trim().toLowerCase();
-        // Intentionally never match "Next", "Continue", or other navigation.
-        return /^(submit|check|verify)$/.test(text);
-      });
+      if (!scope || !scope.querySelectorAll) continue;
+      const candidates = Array.from(scope.querySelectorAll(SUBMIT_SELECTOR)).filter(isEligible);
       const visibleCandidate = candidates.find(isVisible);
       if (visibleCandidate) return visibleCandidate;
     }
-    return null;
+
+    // ---- Pass 2: whole-document fallback -----------------------------------
+    // Some portals render the Submit button at the page level (sticky footer,
+    // top toolbar, or outside any question container). We search the entire
+    // document for the nearest VISIBLE, ENABLED submit-labelled button,
+    // preferring the one closest to the viewport center so multi-question
+    // pages pick the right one.
+    const all = Array.from(document.querySelectorAll(SUBMIT_SELECTOR))
+      .filter(btn => isVisible(btn) && isEligible(btn));
+    if (all.length === 0) return null;
+    if (all.length === 1) return all[0];
+
+    const viewportCenter = window.innerHeight / 2;
+    let best = all[0];
+    let bestDist = Infinity;
+    for (const btn of all) {
+      const rect = btn.getBoundingClientRect();
+      const center = rect.top + rect.height / 2;
+      const dist = Math.abs(center - viewportCenter);
+      if (dist < bestDist) {
+        best = btn;
+        bestDist = dist;
+      }
+    }
+    return best;
   }
+
+  /**
+   * Is a button's label a "next/forward" action (advances to the next question)?
+   *
+   * Accepts: next, next question, next →, continue, skip, skip question,
+   *          submit & next, submit and next (these advance after submitting),
+   *          check & next, verify & next.
+   * Rejects (no forward word present): submit, submit answer, check answer,
+   *          verify, previous, prev, back, cancel, close, finish, save, exit.
+   *
+   * "previous"/"back" are intentionally rejected — Shift+Enter is forward-only.
+   * Pure submit labels ("Submit", "Check Answer") are rejected because they
+   * do NOT advance to the next question by themselves; the user can press
+   * plain Enter for those.
+   */
+  function isNextLabel(text) {
+    if (!text) return false;
+    const t = text.trim().toLowerCase();
+    // Pure backward-navigation labels: never treat as next.
+    if (/^(previous|prev|back|cancel|close)$/.test(t)) return false;
+    // Must contain a forward word: next, continue, or skip.
+    // "submit & next" qualifies (it advances), "submit" alone does not.
+    return /\b(next|continue|skip)\b/.test(t);
+  }
+
+  /**
+   * Find a Next/Continue/Skip button for the current question.
+   *
+   * Same two-pass strategy as findSubmitButton():
+   *   1. Search question scope + known parent scopes.
+   *   2. Fall back to a whole-document search for the closest visible,
+   *      enabled, next-labelled button (sticky footer / top toolbar / modal).
+   *
+   * Uses the same getButtonLabel() so icon-only buttons (aria-label="Next"),
+   * <input value="Next">, title="Next Question", and data-testid="next-btn"
+   * all work. Backward-only labels (Previous/Back) are never matched.
+   *
+   * Returns null if no eligible button is found.
+   */
+  function findNextButton(questionEl) {
+    if (!questionEl) return null;
+
+    const NEXT_SELECTOR = 'button, [role="button"], input[type="submit"], input[type="button"], [data-testid*="next" i], [data-testid*="continue" i]';
+
+    const isEligible = (btn) => {
+      if (!btn || btn.disabled) return false;
+      if (btn.getAttribute('aria-disabled') === 'true') return false;
+      return isNextLabel(getButtonLabel(btn));
+    };
+
+    // ---- Pass 1: question scope + known parent scopes ----------------------
+    const scopes = [];
+    const addScope = (el) => {
+      if (el && !scopes.includes(el)) scopes.push(el);
+    };
+    addScope(questionEl);
+    addScope(questionEl.closest('[data-testid="card"]'));
+    addScope(questionEl.closest('fieldset'));
+    addScope(questionEl.closest('[data-question], [data-question-id], .question, .quiz-question'));
+    addScope(questionEl.closest('form'));
+    addScope(questionEl.closest('[role="dialog"], [role="tabpanel"], [aria-modal="true"]'));
+    addScope(questionEl.closest('main, [role="main"], #root, body'));
+
+    for (const scope of scopes) {
+      if (!scope || !scope.querySelectorAll) continue;
+      const candidates = Array.from(scope.querySelectorAll(NEXT_SELECTOR)).filter(isEligible);
+      const visibleCandidate = candidates.find(isVisible);
+      if (visibleCandidate) return visibleCandidate;
+    }
+
+    // ---- Pass 2: whole-document fallback -----------------------------------
+    const all = Array.from(document.querySelectorAll(NEXT_SELECTOR))
+      .filter(btn => isVisible(btn) && isEligible(btn));
+    if (all.length === 0) return null;
+    if (all.length === 1) return all[0];
+
+    const viewportCenter = window.innerHeight / 2;
+    let best = all[0];
+    let bestDist = Infinity;
+    for (const btn of all) {
+      const rect = btn.getBoundingClientRect();
+      const center = rect.top + rect.height / 2;
+      const dist = Math.abs(center - viewportCenter);
+      if (dist < bestDist) {
+        best = btn;
+        bestDist = dist;
+      }
+    }
+    return best;
+  }
+
   /**
    * Has the user selected an answer for the current question?
    * We require a selection before Enter/Space can submit, because some
@@ -726,7 +992,7 @@
   }
 
   /**
-   * Handle Enter OR Space as a submit trigger in practice mode.
+   * Handle plain Enter OR Space as a submit trigger.
    *
    * Safety guards:
    *   - Only fires on the first keydown (event.repeat is ignored).
@@ -734,12 +1000,17 @@
    *     Space (or vice versa) is ignored for the same question.
    *   - Never activates Next as a side effect: we look for the Submit button
    *     specifically. If only a Next button is visible (no Submit), we skip
-   *     rather than click Next.
+   *     rather than click Next. (Shift+Enter is the dedicated Next shortcut.)
    *   - Never clicks a disabled button.
    *   - Requires an answer to be selected (when options exist).
+   *
+   * NOTE: This handler is called for Enter/Space WITHOUT Shift held.
+   * Shift+Enter / Shift+Space are routed to handleNextKey() instead.
    */
   let lastSubmitAt = 0;
   const SUBMIT_DEBOUNCE_MS = 800;
+  let lastNextAt = 0;
+  const NEXT_DEBOUNCE_MS = 800;
 
   function handleSubmitKey(event) {
     if (!enabled) return;
@@ -758,9 +1029,9 @@
 
     if (!isPracticePageAuthorized()) {
       log(key === 'Enter' ? 'Enter' : 'Space',
-          'pressed but practice mode is not authorized on this page. ' +
-          'Enable "Enter / Space to submit" and use an authorized local fixture or ' +
-          'an explicitly supported CCBP practice route to use this shortcut.');
+          'pressed but Enter/Space-to-submit is OFF. ' +
+          'Open the KeyPilot popup → Settings → enable "Enter / Space to submit" ' +
+          'to use this shortcut on any website.');
       return;
     }
 
@@ -788,22 +1059,119 @@
 
     const submitBtn = findSubmitButton(question);
     if (!submitBtn) {
-      warn(key + ' pressed on a practice page but no Submit button found.');
+      warn(key + ' pressed but no Submit button found on this page. ' +
+           'If a Submit button exists, its label may use a non-English word or an ' +
+           'icon without an aria-label. Open the popup → Diagnostics → Run Diagnostics.');
       return;
     }
 
-    // Never activate Next as a side effect of this feature. If the only
-    // available button is labeled "Next" (not "Submit"), skip it.
-    const btnText = (submitBtn.textContent || submitBtn.value || '').trim().toLowerCase();
-    if (btnText === 'next') {
-      warn(key + ' pressed but only a Next button is visible — not activating Next ' +
-           'as a side effect of practice-mode submit.');
+    // Defensive double-check: never click a button whose final label is a
+    // pure navigation word. findSubmitButton already filters these, but this
+    // guards against label resolution edge cases.
+    const finalLabel = getButtonLabel(submitBtn);
+    if (/^(next|next question|continue|skip|skip question|previous|prev|back|cancel|close|finish|save|save & exit|save and exit|exit)$/.test(finalLabel)) {
+      warn(key + ' pressed but the resolved button is navigation-only: "' + finalLabel + '". Not clicking.');
       return;
     }
 
     lastSubmitAt = now;
-    log(key + ' pressed on practice page — clicking submit button:', submitBtn);
+    // Invalidate the question cache — after submit, the page likely shows a
+    // new question or feedback panel, so the next keypress must re-scan.
+    _invalidateQuestionCache();
+    log(key + ' pressed — clicking submit button:', submitBtn,
+        '(label="' + finalLabel + '")');
     try { submitBtn.click(); } catch (e) { warn('submitBtn.click failed', e); }
+  }
+
+  /**
+   * Handle Shift+Enter OR Shift+Space as a "go to next question" trigger.
+   *
+   * This is the dedicated shortcut for advancing to the next question:
+   *   - Plain Enter / Space  → click Submit button (see handleSubmitKey)
+   *   - Shift + Enter / Space → click Next / Continue / Skip button
+   *
+   * Safety guards (same shape as handleSubmitKey):
+   *   - Only fires on the first keydown (event.repeat is ignored).
+   *   - Debounce: 800ms between Next clicks so Shift+Enter+Space can't double-fire.
+   *   - Never clicks a disabled button.
+   *   - Gated by the same "Enter / Space to submit" toggle in the popup.
+   *   - Works on any http/https/file page (same as submit).
+   *   - Never activates Previous / Back — findNextButton only matches
+   *     forward navigation labels (next/continue/skip).
+   *
+   * Note: the answer does NOT need to be selected for Shift+Enter. The user
+   * may want to skip a question without answering, and most portals allow
+   * that via the Next/Skip button. If a portal requires an answer before
+   * enabling Next, findNextButton will simply return null because the button
+   * is disabled, and we'll log a friendly warning.
+   */
+  function handleNextKey(event) {
+    if (!enabled) return;
+    if (isTypingTarget(event.target)) return;
+    // Ctrl/Cmd/Alt are reserved for browser shortcuts. Shift is the modifier
+    // we WANT here, so we don't reject it.
+    if (event.ctrlKey || event.metaKey || event.altKey) return;
+
+    const key = event.key;
+    const isNextKey = (key === 'Enter' || key === ' ');
+    if (!isNextKey) return;
+
+    // Only call this handler when Shift is held. (handleKeyDown branches.)
+    if (!event.shiftKey) return;
+
+    // Ignore repeated keydown from holding the key.
+    if (event.repeat) {
+      event.preventDefault();
+      return;
+    }
+
+    if (!isPracticePageAuthorized()) {
+      log('Shift+' + (key === 'Enter' ? 'Enter' : 'Space'),
+          'pressed but Enter/Space-to-submit is OFF. ' +
+          'Open the KeyPilot popup → Settings → enable "Enter / Space to submit" ' +
+          'to use Shift+Enter for Next on any website.');
+      return;
+    }
+
+    // Debounce: prevent Shift+Enter+Space from both firing on the same question.
+    const now = Date.now();
+    if ((now - lastNextAt) < NEXT_DEBOUNCE_MS) {
+      event.preventDefault();
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const question = getCurrentlyVisibleQuestion();
+    // We don't strictly need a question container to find a Next button —
+    // many portals render Next in a page-level toolbar. But if we DO have
+    // one, prefer it as the search root for tighter scoping.
+    const nextBtn = findNextButton(question || document.body);
+    if (!nextBtn) {
+      warn('Shift+' + (key === 'Enter' ? 'Enter' : 'Space') +
+           ' pressed but no Next / Continue / Skip button found on this page. ' +
+           'If the next button uses an icon without aria-label, or is labeled ' +
+           'in a non-English word, it may not be detected. Open popup → ' +
+           'Diagnostics → Run Diagnostics.');
+      return;
+    }
+
+    // Defensive double-check: never click a backward-only button.
+    const finalLabel = getButtonLabel(nextBtn);
+    if (/^(previous|prev|back|cancel|close|finish|save|save & exit|save and exit|exit|submit|check|verify)$/.test(finalLabel)) {
+      warn('Shift+' + (key === 'Enter' ? 'Enter' : 'Space') +
+           ' resolved to a non-forward button: "' + finalLabel + '". Not clicking.');
+      return;
+    }
+
+    lastNextAt = now;
+    // Invalidate the question cache — after Next, a new question is shown.
+    _invalidateQuestionCache();
+    log('Shift+' + (key === 'Enter' ? 'Enter' : 'Space') +
+        ' pressed — clicking next button:', nextBtn,
+        '(label="' + finalLabel + '")');
+    try { nextBtn.click(); } catch (e) { warn('nextBtn.click failed', e); }
   }
 
   function handleKeyDown(event) {
@@ -813,13 +1181,20 @@
     if (isTypingTarget(event.target)) return;
 
     // Skip modifier-key combinations (Ctrl/Cmd/Alt) so browser shortcuts work.
+    // NOTE: Shift is intentionally NOT skipped here — Shift+Enter / Shift+Space
+    // are our dedicated "go to next question" shortcuts.
     if (event.ctrlKey || event.metaKey || event.altKey) return;
 
     const key = event.key;
 
-    // Enter / Space-to-submit is handled separately (practice mode only).
+    // Enter / Space → submit (plain) OR next (with Shift).
+    // Branch on Shift BEFORE dispatching so the two shortcuts don't collide.
     if (key === 'Enter' || key === ' ') {
-      handleSubmitKey(event);
+      if (event.shiftKey) {
+        handleNextKey(event);
+      } else {
+        handleSubmitKey(event);
+      }
       return;
     }
 
@@ -913,12 +1288,12 @@
         sendResponse({ ok: true, installed: true, enabled });
         break;
       case 'setPracticeSubmit':
-        // Updates the Enter-to-submit setting. Even when enabled=true, the
-        // content script will only honor Enter on pages that opt in via
-        // <html data-keypilot-practice="true">. See isPracticePageAuthorized().
+        // Updates the Enter/Space-to-submit toggle. When ON, Enter/Space
+        // works on any http/https/file page (no per-site opt-in needed).
+        // See isPracticePageAuthorized().
         practiceSubmit = !!message.enabled;
         log('practiceSubmit set to', practiceSubmit,
-            '(page-level opt-in still required via data-keypilot-practice="true")');
+            '(works on any http/https/file page when ON)');
         sendResponse({ ok: true, practiceSubmit });
         break;
       case 'diagnose':
@@ -927,6 +1302,7 @@
           const q = getCurrentlyVisibleQuestion();
           const opts = q ? getOptionsForQuestion(q) : [];
           const submitBtn = q ? findSubmitButton(q) : null;
+          const nextBtn = q ? findNextButton(q) : findNextButton(document.body);
           sendResponse({
             ok: true,
             installed: true,
@@ -938,6 +1314,8 @@
             practicePageAuthorized: isPracticePageAuthorized(),
             submitButtonFound: !!submitBtn,
             submitButtonText: submitBtn ? (submitBtn.textContent || submitBtn.value || '').trim() : null,
+            nextButtonFound: !!nextBtn,
+            nextButtonText: nextBtn ? (nextBtn.textContent || nextBtn.value || '').trim() : null,
             answerSelected: q ? hasSelectedAnswer(q) : false,
             question: q ? {
               tag: q.tagName.toLowerCase(),
@@ -980,6 +1358,7 @@
       const q = getCurrentlyVisibleQuestion();
       const opts = q ? getOptionsForQuestion(q) : [];
       const submitBtn = q ? findSubmitButton(q) : null;
+      const nextBtn = q ? findNextButton(q) : findNextButton(document.body);
       return {
         enabled,
         version: VERSION,
@@ -989,6 +1368,8 @@
         practicePageAuthorized: isPracticePageAuthorized(),
         submitButtonFound: !!submitBtn,
         submitButtonText: submitBtn ? (submitBtn.textContent || submitBtn.value || '').trim() : null,
+        nextButtonFound: !!nextBtn,
+        nextButtonText: nextBtn ? (nextBtn.textContent || nextBtn.value || '').trim() : null,
         answerSelected: q ? hasSelectedAnswer(q) : false,
         question: q
           ? q.tagName.toLowerCase() +

@@ -428,14 +428,20 @@ body {
 /* ---------- Shortcut cards ------------------------------------------- */
 .shortcut-grid {
   display: grid;
+  /* 8 cards arranged as a clean 4x2 grid:
+       Row 1: [1] [2] [3] [4]            — option selection
+       Row 2: [Space] [Enter] [Shift+Enter] [Shift+Space]  — submit / next
+     4 columns keeps each card uniform width. The .key chip auto-sizes
+     horizontally so "Shift + Space" fits without overflow. */
   grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
+  gap: 7px;
 }
 
 .shortcut-card {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 7px;
   padding: 11px 6px 10px;
   background: var(--clay-bg);
@@ -443,6 +449,7 @@ body {
   box-shadow: var(--clay-shadow-out-sm);
   border: 1px solid transparent;
   transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  min-height: 64px;
 }
 .shortcut-card:hover {
   transform: translateY(-2px);
@@ -460,10 +467,13 @@ body {
 
 .key {
   font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
-  width: 30px;
-  height: 30px;
+  /* Auto-size: digit keys stay square; word keys like "Enter" and "Shift + Enter"
+     get extra horizontal padding instead of overflowing the fixed 30px width. */
+  min-width: 30px;
+  min-height: 30px;
+  padding: 4px 10px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -475,14 +485,22 @@ body {
     0 3px 8px rgba(118, 103, 232, 0.32);
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
   user-select: none;
+  white-space: nowrap;
+  line-height: 1;
 }
 
 .key-desc {
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 500;
   color: var(--text-secondary);
   text-align: center;
   letter-spacing: 0.01em;
+  line-height: 1.2;
+  /* Allow wrapping so longer descriptions like "Next question" stay on up
+     to 2 lines instead of overflowing the narrow card. */
+  white-space: normal;
+  word-break: keep-all;
+  hyphens: none;
 }
 
 .hint {
@@ -857,6 +875,23 @@ body {
   color: var(--accent-1);
   transform: translate(2px, -2px);
 }
+
+/* Download latest update card (added v2.2.10) — reuses .hush-card layout */
+.download-card { margin-bottom: 8px; }
+.download-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(118, 103, 232, 0.14), rgba(56, 189, 248, 0.14));
+  color: var(--accent-1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.10);
+}
+[data-theme="midnight"] .download-icon { color: var(--accent-2); }
+.download-card:hover .download-icon { color: var(--accent-1); }
 
 /* Link pills (Instagram + GitHub) */
 .link-pills {

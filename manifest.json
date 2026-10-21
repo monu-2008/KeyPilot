@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "KeyPilot by AQERIONX",
-  "version": "2.2.6",
-  "description": "Adaptive quiz-option detection with runtime fallback recovery, persistent CCBP route support, adaptive Smart Dark Mode, and practice-only submit shortcuts.",
+  "version": "2.2.12",
+  "description": "Adaptive quiz-option detection, all-sites Enter/Space-to-submit, Shift+Enter for next question, adaptive Smart Dark Mode.",
   "permissions": [
     "activeTab",
     "scripting",
