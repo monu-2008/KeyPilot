@@ -12,10 +12,9 @@ const LINKS = {
   github: "https://github.com/monu-2008/KeyPilot",
   instagram: "https://www.instagram.com/aqerionx/",
   hush: "https://hush.aqerionx.in/",
-  // Stable download URL: the release workflow always uploads the asset as KeyPilot.zip.
-  // Drive link is a backup only; it may become older than the latest release.
-  downloadDirect:
-    "https://github.com/monu-2008/KeyPilot/releases/latest/download/KeyPilot.zip",
+  // Version-aware endpoint redirects to the newest KeyPilot-vX.Y.Z.zip release asset.
+  // The final download keeps its versioned filename automatically.
+  downloadDirect: "/api/download",
   downloadPreview:
     "https://drive.google.com/file/d/15Lu293brRSRbD7DxUsgLIS0QF74pSfog/view?usp=sharing",
 } as const;
@@ -448,7 +447,7 @@ export default function Page() {
             target="_blank"
             rel="noopener noreferrer"
             className="btn-pill btn-pill-primary"
-            aria-label="Download the latest KeyPilot ZIP from GitHub Releases"
+            aria-label="Download the latest versioned KeyPilot ZIP from GitHub Releases"
           >
             <IconDownload size={15} />
             <span className="navbar-download-label">Download ZIP</span>
