@@ -56,10 +56,15 @@ jobs:
             fi
           done
 
-          zip -r KeyPilot.zip manifest.json popup.html popup.css popup.js background.js content.js dark-mode.css icons
-          unzip -t KeyPilot.zip
+          ZIP_NAME="KeyPilot-v${RELEASE_VERSION}.zip"
+          zip -r "$ZIP_NAME" manifest.json popup.html popup.css popup.js background.js content.js dark-mode.css icons
+          unzip -t "$ZIP_NAME"
+
+          # Keep a stable generic alias for GitHub's permanent latest-download URL too.
+          cp "$ZIP_NAME" KeyPilot.zip
 
           echo "tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+          echo "zip_name=$ZIP_NAME" >> "$GITHUB_OUTPUT"
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
@@ -68,6 +73,8 @@ jobs:
           target_commitish: ${{ github.sha }}
           name: KeyPilot ${{ steps.package.outputs.tag }}
           generate_release_notes: true
-          files: KeyPilot.zip
+          files: |
+            ${{ steps.package.outputs.zip_name }}
+            KeyPilot.zip
           overwrite_files: true
           fail_on_unmatched_files: true
