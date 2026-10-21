@@ -7,10 +7,10 @@ claymorphism + neomorphism + glossy glass bubbles.
 > ⚠️ **This is the marketing site for KeyPilot, not the extension itself.**
 > The Chrome extension source lives at
 > [github.com/monu-2008/KeyPilot](https://github.com/monu-2008/KeyPilot).
-> The main download button uses the stable GitHub Releases asset URL:
-> `https://github.com/monu-2008/KeyPilot/releases/latest/download/KeyPilot.zip`.
-> A Drive preview is retained as a temporary fallback until the first GitHub
-> Release has been published.
+> The main download button calls the version-aware `/api/download` endpoint.
+> It resolves the latest GitHub Release and redirects to an asset named like
+> `KeyPilot-v2.2.12.zip`, so the saved filename includes the current version
+> while the website button URL remains the same.
 
 ---
 
@@ -114,23 +114,29 @@ const LINKS = {
   github:    "https://github.com/monu-2008/KeyPilot",
   instagram: "https://www.instagram.com/aqerionx/",
   hush:      "https://hush.aqerionx.in/",
-  // Stable GitHub Release asset URL; the Drive file remains a temporary fallback.
-  downloadDirect:
-    "https://github.com/monu-2008/KeyPilot/releases/latest/download/KeyPilot.zip",
+  // Resolves latest release and redirects to the versioned ZIP filename.
+  downloadDirect: "/api/download",
   downloadPreview:
     "https://drive.google.com/file/d/15Lu293brRSRbD7DxUsgLIS0QF74pSfog/view?usp=sharing",
 } as const;
 ```
 
-The **Download ZIP** buttons (navbar, hero, and footer) use the stable GitHub Releases URL:
-`https://github.com/monu-2008/KeyPilot/releases/latest/download/KeyPilot.zip`.
-The hero keeps a Google Drive backup link for emergencies; that backup may be
-older than the latest GitHub Release, so the stable GitHub URL is authoritative.
+The **Download ZIP** buttons (navbar, hero, and footer) use `/api/download`.
+The Route Handler calls GitHub's public Releases API and redirects to the newest
+uploaded `KeyPilot-vX.Y.Z.zip` asset. This keeps the website button stable
+while the downloaded ZIP filename changes with each release version. If no
+versioned asset is available yet, the route sends visitors to the GitHub Releases
+page instead of silently serving an outdated Drive copy.
 
-> **For the site owner:** publish the first package once from GitHub Actions →
-> **Publish KeyPilot ZIP** → **Run workflow** with version `2.2.12`. After the
-> first release exists, keep attaching the exact asset name `KeyPilot.zip` to
-> each release. The website URL then stays unchanged; no new Drive ID is needed.
+The hero also retains a Google Drive backup link. That file may be older than
+the latest GitHub Release, so treat it as a backup rather than the authoritative download.
+
+> **For the site owner:** run GitHub Actions → **Publish KeyPilot ZIP** with
+> version `2.2.12` once more after this workflow change, so the current release
+> gains the `KeyPilot-v2.2.12.zip` asset. Each future release should attach its
+> own `KeyPilot-vX.Y.Z.zip` plus the generic `KeyPilot.zip` alias. The website
+> resolves the versioned filename automatically; no website edit or new Drive ID
+> is required for each version.
 
 ---
 
@@ -213,8 +219,8 @@ Typography uses `clamp()` so it scales fluidly between mobile and desktop
 | 10 | **Horizontal overflow check at 360px: `scrollWidth - clientWidth === 0`** (no horizontal scroll). | ✅ Pass |
 | 11 | Mobile menu toggle visible (`display: flex`) at 360px width. | ✅ Pass |
 | 12 | FAQ accordion interaction: clicking the 2nd question closes the 1st and opens the 2nd (single-open behavior, `aria-expanded` toggles correctly). | ✅ Pass |
-| 13 | Source is configured to use GitHub Releases for the stable ZIP link, with the Google Drive URL retained as a backup. | Source checked; live click test pending until the first GitHub Release is published. |
-| 14 | Verify the stable GitHub download URL returns `KeyPilot.zip` after the first release, and the Drive backup is publicly accessible if needed. | Needs real-user verification; run the release workflow once, then test the stable URL in a private window. |
+| 13 | Source is configured with a dynamic `/api/download` endpoint that redirects to the latest versioned GitHub release asset. | Source checked; live test pending | Run the workflow to publish `KeyPilot-v2.2.12.zip`, deploy Vercel, then test the website button. |
+| 14 | Verify the website endpoint redirects to the versioned asset and saves a filename such as `KeyPilot-v2.2.12.zip`. | Needs real-user verification | After deployment and the versioned asset upload, click Download ZIP and inspect the downloaded filename. |
 | 15 | Scroll-to-top button appears after scrolling 600px and scrolls back to top on click. | ✅ Pass |
 | 16 | VLM visual verification (desktop 1440px): pill navbar ✓, large KeyPilot heading ✓, gradient "keyboard"/"workflow" ✓, popup preview with theme pills + 1–4 keys ✓. | ✅ Pass |
 | 17 | VLM visual verification (full page 1440px): glossy pastel bubbles ✓, four install step cards ✓, FAQ section with expanded accordion ✓. | ✅ Pass |
@@ -225,7 +231,7 @@ Typography uses `clamp()` so it scales fluidly between mobile and desktop
 | # | Test | Why not | How to run it |
 |---|---|---|---|
 | A | Production build (`bun run build`) — the sandbox auto-runs dev server only and forbids `bun run build`. | Sandbox constraint | Run `bun run build && bun run start` locally to verify the production bundle. |
-| B | Real-user click on the GitHub Release download to confirm the ZIP downloads; the Drive backup may be older than latest. | No interactive download test in this environment. | Run the release workflow once, then click Download ZIP and verify the version/ZIP contents. |
+| B | Real-user click on `/api/download` to confirm it redirects to a versioned ZIP. | No interactive download test in this environment. | Publish the matching release asset, deploy, and verify the downloaded filename and ZIP contents. |
 | C | Lighthouse / Core Web Vitals audit. | No Lighthouse CLI in build env. | Run `npx lighthouse http://localhost:3000` locally. |
 | D | Cross-browser testing (Firefox, Safari, Edge). | Only Chromium available via agent-browser. | Open the page in each browser locally. |
 | E | Real mobile device testing (iOS Safari, Android Chrome). | No real devices. | Use browser dev-tools device emulation, or deploy and test on a real phone. |
