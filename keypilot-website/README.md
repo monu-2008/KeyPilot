@@ -114,22 +114,23 @@ const LINKS = {
   github:    "https://github.com/monu-2008/KeyPilot",
   instagram: "https://www.instagram.com/aqerionx/",
   hush:      "https://hush.aqerionx.in/",
-  // Direct ZIP download URL; preview link is kept as a fallback.
+  // Stable GitHub Release asset URL; the Drive file remains a temporary fallback.
   downloadDirect:
-    "https://drive.google.com/uc?export=download&id=15Lu293brRSRbD7DxUsgLIS0QF74pSfog",
+    "https://github.com/monu-2008/KeyPilot/releases/latest/download/KeyPilot.zip",
   downloadPreview:
     "https://drive.google.com/file/d/15Lu293brRSRbD7DxUsgLIS0QF74pSfog/view?usp=sharing",
 } as const;
 ```
 
-The **Download ZIP** buttons (in the navbar, hero, and footer) use the direct
-Google Drive download URL. The hero also provides a fallback link to the
-original share/preview URL if the browser or Drive does not start the download.
+The **Download ZIP** buttons (navbar, hero, and footer) use the stable GitHub Releases URL:
+`https://github.com/monu-2008/KeyPilot/releases/latest/download/KeyPilot.zip`.
+The hero keeps a Google Drive preview link as a temporary fallback until the
+first GitHub Release has been published.
 
-> **For the site owner:** if you ever change the Drive file, update both
-> `downloadDrive` and `downloadDirect` with the new file ID. Make sure the
-> file's sharing setting is **"Anyone with the link" → Viewer**, otherwise
-> public visitors will hit a permission wall.
+> **For the site owner:** publish the first package once from GitHub Actions →
+> **Publish KeyPilot ZIP** → **Run workflow** with version `2.2.12`. After the
+> first release exists, keep attaching the exact asset name `KeyPilot.zip` to
+> each release. The website URL then stays unchanged; no new Drive ID is needed.
 
 ---
 
@@ -139,7 +140,7 @@ original share/preview URL if the browser or Drive does not start the download.
    blur. Desktop: logo + 5 nav links + GitHub/Instagram icon pills + gradient
    Download ZIP pill. Mobile: collapses center links into a hamburger menu.
    Active section is highlighted with a violet dot as you scroll.
-2. **Hero** — two-column. Left: version badge `v2.1.1`, "KeyPilot" title,
+2. **Hero** — two-column. Left: version badge `v2.2.12`, "KeyPilot" title,
    "Your keyboard. Your workflow." (gradient on the keywords), description,
    Download + Installation Guide CTAs, four mini selling points. Right:
    decorative popup preview card (theme pills, status, 1–4 shortcuts,
@@ -154,7 +155,7 @@ original share/preview URL if the browser or Drive does not start the download.
    1.5px dark `#211923` outline (matches the reference). 5 questions, single-
    open accordion, first question open by default. Right-aligned chevrons,
    smooth expansion, `prefers-reduced-motion` respected.
-6. **Changelog** — `v2.1.1` with 6 bullet points + an honest "code vs.
+6. **Changelog** — current `v2.2.12` source summary + an honest "code vs.
    runtime" callout.
 7. **Footer** — glass/clay panel with KeyPilot brand block, nav links,
    resources (GitHub/Download/Instagram), and a Hush product card using the
@@ -212,7 +213,7 @@ Typography uses `clamp()` so it scales fluidly between mobile and desktop
 | 10 | **Horizontal overflow check at 360px: `scrollWidth - clientWidth === 0`** (no horizontal scroll). | ✅ Pass |
 | 11 | Mobile menu toggle visible (`display: flex`) at 360px width. | ✅ Pass |
 | 12 | FAQ accordion interaction: clicking the 2nd question closes the 1st and opens the 2nd (single-open behavior, `aria-expanded` toggles correctly). | ✅ Pass |
-| 13 | All external link `href`s verified via DOM inspection: GitHub → `https://github.com/monu-2008/KeyPilot`, Instagram → `https://www.instagram.com/aqerionx/`, Download → `https://drive.google.com/file/d/15Lu293brRSRbD7DxUsgLIS0QF74pSfog/view?usp=sharing`, Hush → `https://hush.aqerionx.in/`. | ✅ Pass |
+| 13 | All external link `href`s verified via DOM inspection: GitHub → `https://github.com/monu-2008/KeyPilot`, Instagram → `https://www.instagram.com/aqerionx/`, Download → `https://github.com/monu-2008/KeyPilot/releases/latest/download/KeyPilot.zip` (stable release asset); Drive is retained as a fallback., Hush → `https://hush.aqerionx.in/`. | ✅ Pass |
 | 14 | Verify that the current Google Drive ZIP is accessible to public visitors without signing in. | Needs real-user verification | Open the Download ZIP link in a signed-out/private window; confirm the file is shared as “Anyone with the link” → Viewer. |
 | 15 | Scroll-to-top button appears after scrolling 600px and scrolls back to top on click. | ✅ Pass |
 | 16 | VLM visual verification (desktop 1440px): pill navbar ✓, large KeyPilot heading ✓, gradient "keyboard"/"workflow" ✓, popup preview with theme pills + 1–4 keys ✓. | ✅ Pass |
@@ -224,7 +225,7 @@ Typography uses `clamp()` so it scales fluidly between mobile and desktop
 | # | Test | Why not | How to run it |
 |---|---|---|---|
 | A | Production build (`bun run build`) — the sandbox auto-runs dev server only and forbids `bun run build`. | Sandbox constraint | Run `bun run build && bun run start` locally to verify the production bundle. |
-| B | Real-user click on the Download ZIP button to confirm the Drive file actually downloads (not just previews). | No interactive Drive session in build env. | Click the Download button in the navbar; if Drive shows a preview page, click the download icon at the top-right of the preview. |
+| B | Real-user click on the GitHub Release download to confirm the ZIP downloads; the Drive preview is a temporary fallback. | No interactive Drive session in build env. | Click Download ZIP once the initial GitHub Release exists; until then, use the Drive fallback in the hero. |
 | C | Lighthouse / Core Web Vitals audit. | No Lighthouse CLI in build env. | Run `npx lighthouse http://localhost:3000` locally. |
 | D | Cross-browser testing (Firefox, Safari, Edge). | Only Chromium available via agent-browser. | Open the page in each browser locally. |
 | E | Real mobile device testing (iOS Safari, Android Chrome). | No real devices. | Use browser dev-tools device emulation, or deploy and test on a real phone. |
