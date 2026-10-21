@@ -1,5 +1,5 @@
 /*
- * KeyPilot by AQERIONX — MV3 service worker (v2.2.6)
+ * KeyPilot by AQERIONX — MV3 service worker (v2.2.12)
  * Manages the user's opt-in Universal Dark Mode across existing and future tabs.
  */
 
