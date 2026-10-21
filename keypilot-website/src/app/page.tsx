@@ -448,7 +448,7 @@ export default function Page() {
             target="_blank"
             rel="noopener noreferrer"
             className="btn-pill btn-pill-primary"
-            aria-label="Open KeyPilot downloads folder in Google Drive"
+            aria-label="Download the latest KeyPilot ZIP from GitHub Releases"
           >
             <IconDownload size={15} />
             <span className="navbar-download-label">Download ZIP</span>
@@ -539,7 +539,7 @@ export default function Page() {
                   <div className="popup-mock-brand-sub">by AQERIONX</div>
                 </div>
               </div>
-              <span className="popup-mock-version">v2.2.6</span>
+              <span className="popup-mock-version">v2.2.12</span>
             </div>
             <div className="popup-mock-pills">
               <button className="popup-mock-pill active">Peach</button>
@@ -573,7 +573,7 @@ export default function Page() {
             </div>
             <div className="popup-mock-footer">
               <span className="popup-mock-footer-brand">AQERIONX</span>
-              · v2.2.6 · Manual submission, always
+              · v2.2.12 · User-controlled shortcuts
             </div>
           </div>
         </div>
@@ -591,7 +591,7 @@ export default function Page() {
             <div className="feature-icon-tile"><IconKeyboard /></div>
             <h3 className="feature-card-title">Keyboard Shortcuts</h3>
             <p className="feature-card-body">
-              Select options quickly using 1–4 on supported practice pages.
+              Select an available option with 1–4 when a supported question layout is detected.
             </p>
           </article>
           <article className="feature-card">
@@ -621,7 +621,7 @@ export default function Page() {
             <div className="feature-icon-tile"><IconSliders /></div>
             <h3 className="feature-card-title">Easy Settings</h3>
             <p className="feature-card-body">
-              Configure available preferences and practice-mode behaviour.
+              Configure Enter/Space submission, forward navigation, themes and other preferences.
             </p>
           </article>
         </div>
@@ -735,21 +735,20 @@ export default function Page() {
           <ul className="changelog-list">
             <li><span className="changelog-bullet" />When enabled on learning.ccbp.in, optional site permission lets KeyPilot stay active across CCBP route navigations; adaptive DOM fallback retries different option patterns.</li>
             <li><span className="changelog-bullet" />Adaptive DOM recovery can try native-radio and custom ARIA option fallbacks when a quiz layout differs; diagnostics reports which detector path was used.</li>
-            <li><span className="changelog-bullet" />Route-independent question detection now includes a generic fallback for pages using native radio inputs; Enter/Space submission remains limited to supported practice routes.</li>
+            <li><span className="changelog-bullet" />Question detection uses known selectors plus native-radio and custom ARIA fallbacks. Keyboard selection depends on a supported page structure.</li>
             <li><span className="changelog-bullet" />Diagnostics now target the top-level CCBP page, avoiding third-party embedded frames; the named primitive-coding practice route is supported.</li>
             <li><span className="changelog-bullet" />Adaptive Dark Mode replaces full-page inversion with light-surface and text-color adjustments; all-sites access is requested only when enabled.</li>
             <li><span className="changelog-bullet" />Three premium themes (Peach Clay, Midnight, Lavender Glass Clay) with persistence.</li>
-            <li><span className="changelog-bullet" />Keyboard shortcuts 1–4 select the corresponding available option on supported practice pages.</li>
+            <li><span className="changelog-bullet" />Keys 1–4 select a detected option; supported option patterns are not tied to one URL route.</li>
             <li><span className="changelog-bullet" />Built-in Diagnostics with real checks, status states, and Copy Debug Report.</li>
-            <li><span className="changelog-bullet" />Saved theme, reduced-motion, and practice-mode preferences via chrome.storage.local.</li>
-            <li><span className="changelog-bullet" />Optional Enter / Space-to-submit restricted to local practice pages only.</li>
-            <li><span className="changelog-bullet" />Footer links to Hush, Instagram (@aqerionx), and the public GitHub repository.</li>
+            <li><span className="changelog-bullet" />Theme, reduced-motion, keyboard submit/navigation preferences and other settings are stored with chrome.storage.local.</li>
+            <li><span className="changelog-bullet" />When the user enables it, Enter/Space can activate the visible Submit action on a page where KeyPilot is enabled; use care because this may submit a real form.</li>
+            <li><span className="changelog-bullet" />Shift+Enter and Shift+Space can activate a forward control such as Next, Continue, or Skip; Previous/Back controls are excluded.</li>
           </ul>
           <div className="changelog-note">
             <strong>Code vs. runtime:</strong> the items above are implemented
             in the source. They have not been runtime-tested in a real Chrome
-            browser by the maintainer. Run the practice tests in the repository
-            README before relying on any behaviour on a live page.
+            browser by the maintainer. Review Diagnostics and test on a safe page before relying on any behaviour on a live page.
           </div>
         </div>
       </section>
@@ -768,8 +767,7 @@ export default function Page() {
               </div>
             </div>
             <p className="footer-tagline">
-              A smarter keyboard-navigation extension for supported quiz
-              practice pages. Manual submission, always.
+              Keyboard navigation for supported quiz and form controls. User-controlled shortcuts, always.
             </p>
           </div>
 
