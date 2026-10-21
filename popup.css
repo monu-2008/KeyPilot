@@ -1,5 +1,5 @@
 /* =====================================================================
-   KeyPilot by AQERIONX — popup styles (v2.1.0)
+   KeyPilot by AQERIONX — popup styles (v2.2.12)
    Three premium themes: Peach Cream Clay (default), Midnight Gradient,
    Lavender Glass Clay.
 
@@ -220,10 +220,10 @@ body {
 }
 
 .app {
-  padding: 14px 14px 12px;
+  padding: 12px 12px 10px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 9px;
 }
 
 /* ---------- PILL NAVBAR ----------------------------------------------- */
@@ -355,7 +355,7 @@ body {
 
 /* ---------- Status card ----------------------------------------------- */
 .status-card {
-  padding: 13px 14px;
+  padding: 10px 12px;
   background: var(--surface-primary);
   border: 1px solid var(--border);
   border-radius: 14px;
@@ -425,7 +425,7 @@ body {
   color: var(--text-tertiary);
 }
 
-/* ---------- Shortcut cards ------------------------------------------- */
+/* ---------- Compact shortcut cards ----------------------------------- */
 .shortcut-grid {
   display: grid;
   /* 8 cards arranged as a clean 4x2 grid:
@@ -434,7 +434,7 @@ body {
      4 columns keeps each card uniform width. The .key chip auto-sizes
      horizontally so "Shift + Space" fits without overflow. */
   grid-template-columns: repeat(4, 1fr);
-  gap: 7px;
+  gap: 6px;
 }
 
 .shortcut-card {
@@ -442,14 +442,14 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 7px;
-  padding: 11px 6px 10px;
+  gap: 4px;
+  padding: 6px 4px 5px;
   background: var(--clay-bg);
   border-radius: 12px;
   box-shadow: var(--clay-shadow-out-sm);
   border: 1px solid transparent;
   transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
-  min-height: 64px;
+  min-height: 58px;
 }
 .shortcut-card:hover {
   transform: translateY(-2px);
@@ -467,13 +467,12 @@ body {
 
 .key {
   font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 700;
-  /* Auto-size: digit keys stay square; word keys like "Enter" and "Shift + Enter"
-     get extra horizontal padding instead of overflowing the fixed 30px width. */
-  min-width: 30px;
-  min-height: 30px;
-  padding: 4px 10px;
+  /* Compact keycaps stay readable in the four-column shortcut grid. */
+  min-width: 26px;
+  min-height: 24px;
+  padding: 3px 7px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -490,12 +489,12 @@ body {
 }
 
 .key-desc {
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 500;
   color: var(--text-secondary);
   text-align: center;
   letter-spacing: 0.01em;
-  line-height: 1.2;
+  line-height: 1.15;
   /* Allow wrapping so longer descriptions like "Next question" stay on up
      to 2 lines instead of overflowing the narrow card. */
   white-space: normal;
@@ -505,8 +504,8 @@ body {
 
 .hint {
   margin: 2px 2px 0;
-  font-size: 11px;
-  line-height: 1.5;
+  font-size: 10.5px;
+  line-height: 1.35;
   color: var(--text-tertiary);
 }
 
@@ -525,14 +524,14 @@ body {
 .controls {
   display: grid;
   grid-template-columns: 1.4fr 1fr;
-  gap: 9px;
+  gap: 8px;
 }
 
 .btn {
   font: inherit;
   font-weight: 600;
-  font-size: 13px;
-  padding: 11px 14px;
+  font-size: 12.5px;
+  padding: 9px 12px;
   border-radius: 11px;
   border: 1px solid transparent;
   cursor: pointer;
@@ -796,7 +795,7 @@ body {
 .explore-section {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 .explore-title {
   font-size: 10px;
@@ -812,8 +811,8 @@ body {
 .hush-card {
   display: flex;
   align-items: center;
-  gap: 11px;
-  padding: 11px 12px;
+  gap: 9px;
+  padding: 8px 10px;
   background: var(--surface-primary);
   border: 1px solid var(--border);
   border-radius: 13px;
@@ -835,9 +834,9 @@ body {
 .hush-card:active { transform: translateY(0); box-shadow: var(--clay-shadow-in); }
 
 .hush-logo {
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
   object-fit: cover;
   flex-shrink: 0;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
@@ -848,21 +847,21 @@ body {
   min-width: 0;
 }
 .hush-name {
-  font-size: 13.5px;
+  font-size: 12.5px;
   font-weight: 700;
   color: var(--text-primary);
   line-height: 1.2;
 }
 .hush-sub {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--text-secondary);
-  margin-top: 2px;
+  margin-top: 1px;
 }
 .hush-url {
-  font-size: 10.5px;
+  font-size: 9.5px;
   color: var(--accent-1);
   font-family: ui-monospace, monospace;
-  margin-top: 2px;
+  margin-top: 1px;
 }
 [data-theme="midnight"] .hush-url { color: var(--accent-2); }
 
@@ -877,11 +876,11 @@ body {
 }
 
 /* Download latest update card (added v2.2.10) — reuses .hush-card layout */
-.download-card { margin-bottom: 8px; }
+.download-card { margin-bottom: 0; }
 .download-icon {
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -893,10 +892,10 @@ body {
 [data-theme="midnight"] .download-icon { color: var(--accent-2); }
 .download-card:hover .download-icon { color: var(--accent-1); }
 
-/* Link pills (Instagram + GitHub) */
+/* Compact link pills (Instagram + GitHub) */
 .link-pills {
   display: flex;
-  gap: 7px;
+  gap: 6px;
 }
 .link-pill {
   flex: 1;
@@ -904,7 +903,7 @@ body {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 8px 10px;
+  padding: 6px 8px;
   border-radius: 999px;
   font-size: 11px;
   font-weight: 600;
@@ -964,8 +963,8 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 3px;
-  padding-top: 10px;
-  margin-top: 2px;
+  padding-top: 7px;
+  margin-top: 1px;
   border-top: 1px solid var(--border);
 }
 .footer-line {
@@ -1017,8 +1016,8 @@ html.force-reduced-motion .status-dot.on { animation: none; }
 .dark-mode-card {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px;
+  gap: 8px;
+  padding: 9px 10px;
   min-width: 0;
   border: 1px solid var(--border);
   border-radius: 14px;
@@ -1033,9 +1032,9 @@ html.force-reduced-motion .status-dot.on { animation: none; }
 .dark-mode-icon {
   display: grid;
   place-items: center;
-  flex: 0 0 34px;
-  width: 34px;
-  height: 34px;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
   border-radius: 11px;
   color: var(--accent-1);
   background: var(--gradient-accent-soft);
@@ -1067,14 +1066,14 @@ html.force-reduced-motion .status-dot.on { animation: none; }
 .dark-mode-desc {
   margin: 4px 0 0;
   color: var(--text-secondary);
-  font-size: 10.5px;
-  line-height: 1.35;
+  font-size: 10px;
+  line-height: 1.3;
 }
 .dark-mode-status {
-  margin: 5px 0 0;
+  margin: 3px 0 0;
   color: var(--text-tertiary);
-  font-size: 9.5px;
-  line-height: 1.35;
+  font-size: 9px;
+  line-height: 1.25;
   overflow-wrap: anywhere;
 }
 .dark-mode-card[data-enabled="true"] .dark-mode-status {
