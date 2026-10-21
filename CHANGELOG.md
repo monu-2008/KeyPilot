@@ -12,7 +12,8 @@ Notable changes to KeyPilot are recorded here. The current manifest/source versi
 - Reduced popup spacing, shortcut-key badge sizes, action-button padding, and the download/Hush card footprint.
 - Shortened modifier-key labels to reduce wrapping in the shortcut grid.
 - Rewrote the README around the current source, its actual permissions, release workflow, and testing limits.
-- Added a GitHub Actions workflow that packages the extension and attaches a consistently named `KeyPilot.zip` to a release.
+- Added a GitHub Actions workflow that publishes both `KeyPilot-vX.Y.Z.zip` (versioned download filename) and a stable `KeyPilot.zip` alias for each release.
+- Added a website `/api/download` route that finds the latest versioned release asset and redirects to it, so the website URL stays constant while the downloaded filename changes with the release.
 
 ### Notes
 - Option detection is adaptive but not guaranteed to support every website or DOM structure.
