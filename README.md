@@ -1,4 +1,4 @@
-# KeyPilot by AQERIONX (Chrome MV3, v2.2.6)
+# KeyPilot by AQERIONX (Chrome MV3, v2.2.12)
 
 A minimal Manifest V3 Chrome extension that lets you pick quiz answer
 options with the keyboard keys `1`–`4`. It works on standard radio inputs,
@@ -40,6 +40,7 @@ deployment instructions.
 
 ## Table of contents
 
+1. [What changed in v2.2.12 (compact popup and forward navigation)](#what-changed-in-v2212-compact-popup-and-forward-navigation)
 1. [What changed in v2.2.6 (persistent CCBP navigation)](#what-changed-in-v226-persistent-ccbp-navigation)
 1. [What changed in v2.2.5 (adaptive DOM recovery)](#what-changed-in-v225-adaptive-dom-recovery)
 1. [What changed in v2.2.4 (route-independent question detection)](#what-changed-in-v224-route-independent-question-detection)
@@ -73,6 +74,15 @@ deployment instructions.
 23. [Compatibility limitations (honest)](#compatibility-limitations-honest)
 24. [Privacy](#privacy)
 25. [Test status (v2.1.1)](#test-status-v211)
+---
+
+## What changed in v2.2.12 (compact popup and forward navigation)
+
+- Added the `Shift+Enter` and `Shift+Space` shortcut labels for forward navigation.
+- Added a **Download Latest Update** card in the extension popup.
+- Tightened popup spacing, shortcut keycaps, action buttons, and the Hush/download cards to reduce the overall popup height. This UI-only adjustment does not change keyboard handlers or permissions.
+- The extension files should be reloaded in Chrome to see the updated popup styling; live visual testing has not been performed here.
+
 ---
 
 ## What changed in v2.2.6 (persistent CCBP navigation)
@@ -301,7 +311,7 @@ fixes based on the DOM inspection report:
 
 ```
 quiz-keyboard-navigator/
-├── manifest.json               # MV3 manifest; activeTab + scripting + storage, optional CCBP and all-sites access. v2.2.6
+├── manifest.json               # MV3 manifest; activeTab + scripting + storage, optional CCBP and all-sites access. v2.2.12
 ├── background.js               # Keeps Universal Dark Mode applied across tabs and navigations
 ├── dark-mode.css               # Reversible force-dark filter for supported web pages
 ├── content.js                  # Keyboard handler (1-4), practice-submit gate, option detection, indicator
@@ -1082,13 +1092,13 @@ Use this checklist to verify KeyPilot works end-to-end. Open `practice-quiz-port
 
 ---
 
-## Test status (v2.2.6)
+## Test status (v2.2.6 snapshot)
 
 The v2.2.6 source changes have been committed to the public repository. JavaScript and the manifest have been syntax-checked, but **persistent CCBP route injection and adaptive DOM recovery have not yet been verified against all live CCBP quiz layouts**. Do not treat the unchecked checklist as passed.
 
 ### Confirmed by source inspection
 
-- The manifest, popup diagnostics, content diagnostics and landing-page badge are set to v2.2.6.
+- In the v2.2.6 snapshot, the manifest, popup diagnostics, content diagnostics and landing-page badge were set to v2.2.6.
 - The GitHub footer constant points to
   `https://github.com/monu-2008/KeyPilot`.
 - Hush and Instagram links point to the configured AQERIONX destinations.
