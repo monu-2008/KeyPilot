@@ -16,28 +16,29 @@ KeyPilot adds keyboard navigation for supported quiz/question interfaces, option
 
 KeyPilot does not generate answers. It responds to keyboard actions and detected page controls. Test changes on a page where it is safe to submit or navigate.
 
-## Download the latest ZIP
+## Download the latest versioned ZIP
 
-After the first release is published, use the stable download URL:
+Use the website's permanent download endpoint:
 
-**[Download the latest KeyPilot.zip](https://github.com/monu-2008/KeyPilot/releases/latest/download/KeyPilot.zip)**
+**[Download the latest KeyPilot ZIP](https://keypilot.aqerionx.in/api/download)**
 
-The link stays the same for future versions as long as every GitHub Release attaches the asset under the exact name `KeyPilot.zip`.
+The website resolves the newest GitHub Release and redirects to the versioned asset, so the saved filename looks like `KeyPilot-v2.2.12.zip`. The website URL stays the same across releases.
 
 - [All releases and release notes](https://github.com/monu-2008/KeyPilot/releases)
+- [Direct stable alias download](https://github.com/monu-2008/KeyPilot/releases/latest/download/KeyPilot.zip) — this optional alias uses the generic filename `KeyPilot.zip`.
 - [Source code](https://github.com/monu-2008/KeyPilot)
 
 ### One-time setup for the first release
 
-The repository includes a GitHub Actions workflow named **Publish KeyPilot ZIP**. To publish the first `v2.2.12` package, open the repository's **Actions** tab, select that workflow, choose **Run workflow**, and keep the version at `2.2.12`. The workflow validates the tag/version against `manifest.json`, packages the extension files, and publishes `KeyPilot.zip`.
+The repository includes a GitHub Actions workflow named **Publish KeyPilot ZIP**. To publish the current version, open **Actions → Publish KeyPilot ZIP → Run workflow** and use `2.2.12`. The workflow checks the input against `manifest.json`, builds `KeyPilot-v2.2.12.zip`, and publishes it alongside the stable alias `KeyPilot.zip`.
 
-For future versions, update the version in `manifest.json`, make the corresponding source/documentation changes, then push a matching tag such as `v2.2.13`. The workflow will build the ZIP and attach it to a GitHub Release. No new download URL is needed on the website.
+For future releases, update `manifest.json` and the relevant source/documentation, then push a matching tag such as `v2.2.13`. The workflow creates `KeyPilot-v2.2.13.zip` and also replaces the generic `KeyPilot.zip` alias. The website endpoint stays unchanged; the website redirects to the versioned asset.
 
 > Creating a release ZIP does not automatically update an extension installed with **Load unpacked**. The user must replace/update the extracted files and click **Reload** in `chrome://extensions`. Automatic extension updates are a separate distribution feature; consider the Chrome Web Store if you want regular users to receive browser-managed updates.
 
 ## Install from a ZIP (developer mode)
 
-1. Download and extract `KeyPilot.zip` to a folder you control.
+1. Download and extract the versioned `KeyPilot-vX.Y.Z.zip` file to a folder you control.
 2. Open `chrome://extensions` in Chrome.
 3. Turn on **Developer mode**.
 4. Choose **Load unpacked** and select the extracted folder that contains `manifest.json`.
@@ -48,7 +49,7 @@ Keep the extracted folder in place; Chrome loads the extension from that folder.
 
 ## Update an unpacked installation
 
-1. Download the newest ZIP from the same [stable URL](https://github.com/monu-2008/KeyPilot/releases/latest/download/KeyPilot.zip).
+1. Download the newest versioned ZIP from the same [stable website URL](https://keypilot.aqerionx.in/api/download).
 2. Extract the ZIP and replace the files in the existing KeyPilot folder. Make sure you preserve the folder that Chrome has loaded.
 3. Open `chrome://extensions` and press **Reload** on KeyPilot.
 
