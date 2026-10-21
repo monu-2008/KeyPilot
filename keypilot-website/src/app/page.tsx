@@ -13,7 +13,7 @@ const LINKS = {
   instagram: "https://www.instagram.com/aqerionx/",
   hush: "https://hush.aqerionx.in/",
   // Stable download URL: the release workflow always uploads the asset as KeyPilot.zip.
-  // The Drive preview remains a temporary fallback until the first GitHub Release is published.
+  // Drive link is a backup only; it may become older than the latest release.
   downloadDirect:
     "https://github.com/monu-2008/KeyPilot/releases/latest/download/KeyPilot.zip",
   downloadPreview:
@@ -504,7 +504,7 @@ export default function Page() {
               target="_blank"
               rel="noopener noreferrer"
             >
-              Open the Google Drive file
+              Open the Google Drive backup (may be an older version)
             </a>
           </p>
           <div className="hero-points">
@@ -735,7 +735,7 @@ export default function Page() {
           <ul className="changelog-list">
             <li><span className="changelog-bullet" />Shift+Enter and Shift+Space can activate a forward control such as Next, Continue, or Skip; Previous and Back controls are excluded.</li>
             <li><span className="changelog-bullet" />The popup shortcut cards, key badges, action buttons, and download/Hush cards use a more compact layout.</li>
-            <li><span className="changelog-bullet" />Download ZIP uses a stable GitHub Releases URL with the asset name KeyPilot.zip; the Drive preview remains a temporary fallback until the first release is published.</li>
+            <li><span className="changelog-bullet" />Download ZIP uses a stable GitHub Releases URL with the asset name KeyPilot.zip; the Drive backup remains available, but it may be older than the latest GitHub Release.</li>
             <li><span className="changelog-bullet" />When enabled on learning.ccbp.in, optional site permission lets KeyPilot stay active across CCBP route navigations; adaptive DOM fallback retries different option patterns.</li>
             <li><span className="changelog-bullet" />Adaptive DOM recovery can try native-radio and custom ARIA option fallbacks when a quiz layout differs; diagnostics reports which detector path was used.</li>
             <li><span className="changelog-bullet" />Question detection uses known selectors plus native-radio and custom ARIA fallbacks. Keyboard selection depends on a supported page structure.</li>
